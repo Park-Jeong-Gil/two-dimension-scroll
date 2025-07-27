@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>모달 내부 스크롤 테스트</title>
+    
+    <!-- TwoDimensionScroll -->
+    <script src="./dist/bundle-simple.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .content {
+            padding: 50px;
+            color: white;
+        }
+        
+        .section {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            margin: 20px 0;
+            border-radius: 20px;
+            font-size: 48px;
+            font-weight: bold;
+        }
+        
+        .test-button {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 40px;
+            font-size: 18px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .test-button:hover {
+            background: #ff5252;
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+        
+        /* 모달 스타일 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            max-height: 400px; /* 확실히 스크롤이 발생하도록 낮은 높이 */
+            overflow-y: auto;
+            overflow-x: hidden;
+            margin: 20px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+            
+            /* 스크롤 최적화 */
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            
+            /* 확실한 스크롤바 표시 */
+            scrollbar-width: auto;
+        }
+        
+        .modal-content::-webkit-scrollbar {
+            width: 12px;
+        }
+        
+        .modal-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 6px;
+        }
+        
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 6px;
+        }
+        
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        .modal-header {
+            position: sticky;
+            top: 0;
+            background: white;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 20px;
+        }
+        
+        .modal-content h2 {
+            margin: 0;
+            color: #333;
+        }
+        
+        .close-button {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            margin-top: 20px;
+        }
+        
+        .close-button button {
+            width: 100%;
+            padding: 15px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .close-button button:hover {
+            background: #c82333;
+        }
+        
+        .scroll-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .scroll-item:nth-child(even) {
+            background: #e9ecef;
+            border-left-color: #28a745;
+        }
+        
+        .highlight {
+            background: #fff3cd !important;
+            border-left-color: #ffc107 !important;
+            font-weight: bold;
+        }
+        
+        .debug-log {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.9);
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 3000;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h1>🎭 모달 내부 스크롤 테스트</h1>
+        <p>TwoDimensionScroll과 React 환경에서 모달 내부 스크롤이 정상적으로 작동하는지 테스트합니다.</p>
+        
+        <!-- 테스트 버튼 -->
+        <button class="test-button" onclick="openModal()">
+            🎭 모달 열기 (스크롤 테스트)
+        </button>
+        
+        <!-- 배경 스크롤용 섹션들 -->
+        <div class="section">Section 1</div>
+        <div class="section">Section 2</div>
+        <div class="section">Section 3</div>
+        <div class="section">Section 4</div>
+        <div class="section">Section 5</div>
+    </div>
+    
+    <!-- 디버그 로그 -->
+    <div class="debug-log" id="debugLog">
+        <strong>🔍 디버그 로그</strong><br>
+        <span id="logContent">로그가 여기에 표시됩니다...</span>
+    </div>
+    
+    <!-- 모달 (처음에는 숨김) -->
+    <div class="modal-overlay" id="modalOverlay" style="display: none;" role="dialog" aria-modal="true">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>🎭 모달 내부 스크롤 테스트</h2>
+                <p><strong>지침:</strong> 아래 콘텐츠를 위아래로 스크롤해보세요!</p>
+                <p><em>배경은 스크롤되지 않고, 모달 내부만 스크롤되어야 합니다.</em></p>
+            </div>
+            
+            <!-- 스크롤 테스트용 콘텐츠 -->
+            <div id="scrollContent">
+                <!-- JavaScript로 동적 생성 -->
+            </div>
+            
+            <div class="close-button">
+                <button onclick="closeModal()">모달 닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // TwoDimensionScroll 초기화
+        let scrollLib = null;
+        let logLines = [];
+        
+        function addLog(message) {
+            logLines.push(new Date().toLocaleTimeString() + ': ' + message);
+            if (logLines.length > 10) logLines.shift();
+            document.getElementById('logContent').innerHTML = logLines.join('<br>');
+        }
+        
+        // DOM 로드 후 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('🚀 TwoDimensionScroll 초기화 시작...');
+            
+            try {
+                scrollLib = new TwoDimensionScroll({
+                    debug: true,
+                    desktop: {
+                        duration: 1000,
+                        lerp: 0.1
+                    },
+                    mobile: {
+                        duration: 800,
+                        lerp: 0.15
+                    }
+                });
+                
+                addLog('✅ TwoDimensionScroll 초기화 완료');
+                
+                // 스크롤 이벤트 리스너
+                scrollLib.on(function(data) {
+                    // 간단한 스크롤 정보만 로그
+                    if (data.scroll % 100 === 0) {
+                        addLog(`📊 스크롤: ${Math.round(data.scroll)}px`);
+                    }
+                });
+                
+            } catch (error) {
+                addLog('❌ 초기화 실패: ' + error.message);
+            }
+            
+            // 모달 콘텐츠 생성
+            generateModalContent();
+        });
+        
+        function generateModalContent() {
+            const scrollContent = document.getElementById('scrollContent');
+            let content = '';
+            
+            for (let i = 1; i <= 25; i++) {
+                const isHighlight = i === 5 || i === 15 || i === 25;
+                const className = isHighlight ? 'scroll-item highlight' : 'scroll-item';
+                
+                content += `
+                    <div class="${className}">
+                        <strong>줄 ${i}:</strong> 
+                        모달 내부 스크롤 테스트 콘텐츠입니다. 
+                        ${isHighlight ? '⭐ 중요한 줄입니다!' : '일반적인 테스트 콘텐츠입니다.'}
+                        <br>
+                        <small>
+                            이 줄이 스크롤되어 보인다면 모달 내부 스크롤이 정상 작동하는 것입니다.
+                            ${i === 1 ? '(맨 위)' : ''}
+                            ${i === 25 ? '(맨 아래)' : ''}
+                        </small>
+                    </div>
+                `;
+            }
+            
+            scrollContent.innerHTML = content;
+        }
+        
+        function openModal() {
+            addLog('🎭 모달 열기 시작...');
+            
+            if (scrollLib) {
+                scrollLib.pauseForModal();
+                addLog('✅ pauseForModal() 호출 완료');
+            }
+            
+            document.getElementById('modalOverlay').style.display = 'flex';
+            addLog('✅ 모달 표시 완료');
+            addLog('👆 모달 내부를 스크롤해보세요!');
+        }
+        
+        function closeModal() {
+            addLog('🎭 모달 닫기 시작...');
+            
+            document.getElementById('modalOverlay').style.display = 'none';
+            
+            if (scrollLib) {
+                scrollLib.resumeFromModal();
+                addLog('✅ resumeFromModal() 호출 완료');
+            }
+            
+            addLog('✅ 모달 닫기 완료');
+        }
+        
+        // 모달 오버레이 클릭 시 닫기
+        document.getElementById('modalOverlay').addEventListener('click', closeModal);
+        
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('modalOverlay').style.display === 'flex') {
+                closeModal();
+            }
+        });
+        
+        // 페이지 로드 완료 로그
+        window.addEventListener('load', function() {
+            addLog('🎉 페이지 로드 완료');
+            addLog('준비: 버튼을 클릭하여 테스트하세요!');
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React + TwoDimensionScroll 테스트</title>
+    
+    <!-- React 라이브러리 (개발용) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- TwoDimensionScroll -->
+    <script src="./dist/bundle-simple.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 200px;
+        }
+        
+        .control-panel h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 6px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .button:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+        
+        .button.danger {
+            background: #dc3545;
+        }
+        
+        .button.danger:hover {
+            background: #c82333;
+        }
+        
+        .scroll-info {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .section {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin: 50px;
+            border-radius: 20px;
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        
+        .section-subtitle {
+            font-size: 18px;
+            opacity: 0.8;
+            margin-top: 20px;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            max-height: 500px; /* 고정 높이로 설정하여 확실히 스크롤 발생 */
+            overflow-y: auto; /* 세로 스크롤만 허용 */
+            overflow-x: hidden; /* 가로 스크롤 숨김 */
+            margin: 20px;
+            /* React 모달 스크롤 최적화 */
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            /* 스크롤바 스타일링 */
+            scrollbar-width: thin;
+            /* 디버깅을 위한 보더 */
+            border: 2px solid #007bff;
+        }
+        
+        /* 웹킷 기반 브라우저용 스크롤바 스타일 */
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .modal-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        .modal-content h2 {
+            margin-top: 0;
+        }
+        
+        .status-info {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 12px;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div id="react-root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // React용 TwoDimensionScroll Hook
+        const useTwoDimensionScroll = (options = {}) => {
+            const scrollInstance = useRef(null);
+            const [isInitialized, setIsInitialized] = useState(false);
+            const [scrollInfo, setScrollInfo] = useState({
+                position: 0,
+                progress: 0,
+                direction: 0
+            });
+
+            useEffect(() => {
+                // SSR 안전성 체크
+                if (typeof window === 'undefined') return;
+                
+                if (!window.TwoDimensionScroll) {
+                    console.error('TwoDimensionScroll 라이브러리가 로드되지 않았습니다.');
+                    return;
+                }
+
+                console.log('🚀 React에서 TwoDimensionScroll 초기화 시작...');
+
+                try {
+                    // React 친화적 옵션
+                    const reactOptions = {
+                        debug: true,
+                        desktop: {
+                            duration: 1000,
+                            lerp: 0.1,
+                            precisionMode: true,
+                            ...options.desktop
+                        },
+                        mobile: {
+                            duration: 800,
+                            lerp: 0.15,
+                            bounceEffect: true,
+                            ...options.mobile
+                        },
+                        tablet: {
+                            duration: 900,
+                            lerp: 0.12,
+                            hybridMode: true,
+                            ...options.tablet
+                        },
+                        accessibility: {
+                            respectReducedMotion: true,
+                            announceScrollPosition: true,
+                            keyboardNavigation: true,
+                            ...options.accessibility
+                        },
+                        ui: {
+                            hideScrollbar: true,
+                            ...options.ui
+                        },
+                        ...options
+                    };
+
+                    scrollInstance.current = new window.TwoDimensionScroll(reactOptions);
+
+                    // 스크롤 이벤트 리스너
+                    const handleScroll = (data) => {
+                        setScrollInfo({
+                            position: Math.round(data.scroll || 0),
+                            progress: Math.round((data.progress || 0) * 100),
+                            direction: data.direction || 0
+                        });
+                    };
+
+                    scrollInstance.current.on(handleScroll);
+                    setIsInitialized(true);
+
+                    console.log('✅ React에서 TwoDimensionScroll 초기화 완료!');
+                    console.log('📊 React 호환성 정보:', 
+                        scrollInstance.current.getReactCompatibilityInfo()
+                    );
+
+                } catch (error) {
+                    console.error('❌ TwoDimensionScroll 초기화 실패:', error);
+                }
+
+                // React cleanup 함수
+                return () => {
+                    if (scrollInstance.current && !scrollInstance.current.isDestroyed) {
+                        console.log('🧹 React useEffect cleanup 실행');
+                        scrollInstance.current.destroy();
+                    }
+                    setIsInitialized(false);
+                };
+            }, []); // 빈 의존성 배열 - 중요!
+
+            // 메서드들
+            const scrollTo = useCallback((position, options) => {
+                if (scrollInstance.current && isInitialized) {
+                    scrollInstance.current.scrollTo(position, options);
+                }
+            }, [isInitialized]);
+
+            const applyPreset = useCallback((presetName) => {
+                if (scrollInstance.current && isInitialized) {
+                    scrollInstance.current.applyPerformancePreset(presetName);
+                }
+            }, [isInitialized]);
+
+            const pauseForModal = useCallback(() => {
+                if (scrollInstance.current && isInitialized) {
+                    scrollInstance.current.pauseForModal();
+                }
+            }, [isInitialized]);
+
+            const resumeFromModal = useCallback(() => {
+                if (scrollInstance.current && isInitialized) {
+                    scrollInstance.current.resumeFromModal();
+                }
+            }, [isInitialized]);
+
+            const getAccessibilityStatus = useCallback(() => {
+                if (scrollInstance.current && isInitialized) {
+                    return scrollInstance.current.getAccessibilityStatus();
+                }
+                return null;
+            }, [isInitialized]);
+
+            return {
+                isInitialized,
+                scrollInfo,
+                scrollTo,
+                applyPreset,
+                pauseForModal,
+                resumeFromModal,
+                getAccessibilityStatus,
+                instance: scrollInstance.current
+            };
+        };
+
+        // 스크롤 정보 표시 컴포넌트
+        const ScrollInfo = ({ scrollInfo }) => (
+            <div className="scroll-info">
+                <div><strong>📊 스크롤 정보</strong></div>
+                <div>위치: {scrollInfo.position}px</div>
+                <div>진행률: {scrollInfo.progress}%</div>
+                <div>방향: {
+                    scrollInfo.direction > 0 ? '⬇️ 아래' : 
+                    scrollInfo.direction < 0 ? '⬆️ 위' : '⏸️ 정지'
+                }</div>
+            </div>
+        );
+
+        // 메인 React 컴포넌트
+        const ReactScrollDemo = () => {
+            const {
+                isInitialized,
+                scrollInfo,
+                scrollTo,
+                applyPreset,
+                pauseForModal,
+                resumeFromModal,
+                getAccessibilityStatus,
+                instance
+            } = useTwoDimensionScroll({
+                desktop: {
+                    duration: 1200,
+                    lerp: 0.08
+                },
+                mobile: {
+                    duration: 800,
+                    touchMultiplier: 2.8
+                }
+            });
+
+            const [modalOpen, setModalOpen] = useState(false);
+            const [a11yInfo, setA11yInfo] = useState(null);
+            const [reactInfo, setReactInfo] = useState(null);
+
+            // 모달 제어
+            const openModal = useCallback(() => {
+                console.log('🎭 React 모달 열기 시작...');
+                setModalOpen(true);
+                pauseForModal();
+                console.log('✅ React 모달 열기 완료 - body 스크롤 비활성화됨');
+            }, [pauseForModal]);
+
+            const closeModal = useCallback(() => {
+                console.log('🎭 React 모달 닫기 시작...');
+                setModalOpen(false);
+                resumeFromModal();
+                console.log('✅ React 모달 닫기 완료 - body 스크롤 재개됨');
+            }, [resumeFromModal]);
+
+            // 접근성 정보 확인
+            const checkA11yStatus = useCallback(() => {
+                const status = getAccessibilityStatus();
+                setA11yInfo(status);
+                console.log('♿ 접근성 상태:', status);
+            }, [getAccessibilityStatus]);
+
+            // React 호환성 정보 확인
+            const checkReactInfo = useCallback(() => {
+                if (instance) {
+                    const info = instance.getReactCompatibilityInfo();
+                    setReactInfo(info);
+                    console.log('⚛️ React 호환성 정보:', info);
+                }
+            }, [instance]);
+
+            if (!isInitialized) {
+                return (
+                    <div className="loading">
+                        <div>
+                            <div>🔄 TwoDimensionScroll 초기화 중...</div>
+                            <div style={{fontSize: '16px', marginTop: '10px', opacity: 0.8}}>
+                                React 환경에서 라이브러리를 로딩하고 있습니다
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div>
+                    {/* 스크롤 정보 */}
+                    <ScrollInfo scrollInfo={scrollInfo} />
+
+                    {/* 제어 패널 */}
+                    <div className="control-panel">
+                        <h3>🚀 React + TwoDimensionScroll</h3>
+                        
+                        <button 
+                            className="button" 
+                            onClick={() => scrollTo(0, { duration: 800 })}
+                        >
+                            ⬆️ 맨 위로
+                        </button>
+                        
+                        <button 
+                            className="button" 
+                            onClick={() => scrollTo(window.innerHeight * 2)}
+                        >
+                            🎯 중간으로
+                        </button>
+                        
+                        <button 
+                            className="button" 
+                            onClick={() => scrollTo(document.body.scrollHeight)}
+                        >
+                            ⬇️ 맨 아래로
+                        </button>
+
+                        <hr style={{margin: '15px 0', border: 'none', borderTop: '1px solid #eee'}} />
+
+                        <button 
+                            className="button" 
+                            onClick={() => applyPreset('smooth')}
+                        >
+                            🎯 부드러움 프리셋
+                        </button>
+                        
+                        <button 
+                            className="button" 
+                            onClick={() => applyPreset('fast')}
+                        >
+                            🚀 빠름 프리셋
+                        </button>
+                        
+                        <button 
+                            className="button" 
+                            onClick={() => applyPreset('precise')}
+                        >
+                            🎨 정밀 프리셋
+                        </button>
+
+                        <hr style={{margin: '15px 0', border: 'none', borderTop: '1px solid #eee'}} />
+
+                        <button className="button" onClick={openModal}>
+                            🎭 모달 테스트
+                        </button>
+                        
+                        <button className="button" onClick={checkA11yStatus}>
+                            ♿ 접근성 확인
+                        </button>
+                        
+                        <button className="button" onClick={checkReactInfo}>
+                            ⚛️ React 호환성
+                        </button>
+
+                        {/* 상태 정보 표시 */}
+                        {a11yInfo && (
+                            <div className="status-info">
+                                <strong>접근성 상태:</strong><br />
+                                모션 감소: {a11yInfo.reducedMotionActive ? '✅' : '❌'}<br />
+                                키보드: {a11yInfo.keyboardNavigationActive ? '✅' : '❌'}<br />
+                                스크린 리더: {a11yInfo.settings?.screenReader ? '✅' : '❌'}
+                            </div>
+                        )}
+
+                        {reactInfo && (
+                            <div className="status-info">
+                                <strong>React 호환성:</strong><br />
+                                React 환경: {reactInfo.isReactEnvironment ? '✅' : '❌'}<br />
+                                이벤트 리스너: {reactInfo.eventListenerCount}개<br />
+                                React Router: {reactInfo.hasReactRouter ? '✅' : '❌'}<br />
+                                상태 관찰자: {reactInfo.stateObserverActive ? '✅' : '❌'}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 메인 콘텐츠 */}
+                    <div style={{padding: '100px 50px'}}>
+                        {[1, 2, 3, 4, 5].map(num => (
+                            <div 
+                                key={num} 
+                                className="section"
+                                style={{
+                                    background: `linear-gradient(45deg, 
+                                        hsl(${num * 60}, 70%, 60%), 
+                                        hsl(${num * 60 + 60}, 70%, 80%))`
+                                }}
+                            >
+                                <div>Section {num}</div>
+                                <div className="section-subtitle">
+                                    React ⚛️ + TwoDimensionScroll 🚀
+                                    <br />
+                                    완벽한 호환성 테스트 중...
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* React 모달 (TwoDimensionScroll 호환성 최적화) */}
+                    {modalOpen && (
+                        <div 
+                            className="modal-overlay" 
+                            role="dialog" 
+                            aria-modal="true"
+                            aria-labelledby="modal-title"
+                            onClick={closeModal}
+                        >
+                            <div 
+                                className="modal-content" 
+                                onClick={e => e.stopPropagation()}
+                                style={{
+                                    overflow: 'auto',
+                                    maxHeight: '400px',
+                                    /* React 환경에서 스크롤 최적화 */
+                                    overscrollBehavior: 'contain',
+                                    WebkitOverflowScrolling: 'touch'
+                                }}
+                            >
+                                <h2 id="modal-title">🎭 React 모달 테스트</h2>
+                                <p>이 모달이 열려있는 동안 바깥 스크롤은 비활성화됩니다.</p>
+                                <p><strong>모달 내부에서는 일반 브라우저 스크롤이 작동해야 합니다.</strong></p>
+                                <p><em>👇 아래로 스크롤해서 테스트해보세요!</em></p>
+                                
+                                {/* 긴 콘텐츠로 모달 내부 스크롤 테스트 */}
+                                <div style={{
+                                    padding: '10px 0',
+                                    borderTop: '1px solid #eee',
+                                    borderBottom: '1px solid #eee',
+                                    margin: '20px 0'
+                                }}>
+                                    <h3>📜 스크롤 테스트 콘텐츠</h3>
+                                    {Array(20).fill(0).map((_, i) => (
+                                        <div key={i} style={{
+                                            padding: '8px',
+                                            margin: '4px 0',
+                                            background: i % 2 === 0 ? '#f8f9fa' : '#ffffff',
+                                            borderRadius: '4px',
+                                            border: '1px solid #dee2e6'
+                                        }}>
+                                            <strong>줄 {i + 1}:</strong> React 컴포넌트에서 
+                                            완벽하게 작동하는 TwoDimensionScroll! 🎉
+                                            <br />
+                                            <small style={{color: '#6c757d'}}>
+                                                SSR 안전, StrictMode 호환, 메모리 누수 없음 ✅
+                                                {i === 10 && " ← 중간 지점"}
+                                                {i === 19 && " ← 마지막 줄"}
+                                            </small>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div style={{
+                                    padding: '15px',
+                                    background: '#e3f2fd',
+                                    borderRadius: '6px',
+                                    marginBottom: '20px'
+                                }}>
+                                    <strong>✅ 테스트 완료!</strong><br />
+                                    위아래로 스크롤이 정상적으로 작동했다면 React 모달 호환성이 완벽합니다!
+                                </div>
+                                
+                                <button 
+                                    className="button danger" 
+                                    onClick={closeModal}
+                                    style={{marginTop: '20px'}}
+                                    aria-label="모달 닫기"
+                                >
+                                    모달 닫기
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // React 앱 렌더링
+        const root = ReactDOM.createRoot(document.getElementById('react-root'));
+        root.render(<ReactScrollDemo />);
+
+        // 전역 React 호환성 테스트
+        window.addEventListener('load', () => {
+            console.log('🎉 React + TwoDimensionScroll 테스트 페이지 로드 완료!');
+            console.log('📋 테스트 항목:');
+            console.log('  ✅ React Hook 통합');
+            console.log('  ✅ useEffect cleanup');
+            console.log('  ✅ 이벤트 리스너 관리');
+            console.log('  ✅ 모달 통합');
+            console.log('  ✅ 접근성 기능');
+            console.log('  ✅ 환경별 최적화');
+            console.log('  ✅ 성능 프리셋');
+            console.log('🔍 콘솔에서 상세 로그를 확인하세요!');
+        });
+    </script>
+</body>
+</html> 

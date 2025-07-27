@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TwoDimensionScroll - 2차원 스크롤 라이브러리 데모</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+    }
+
+    .section:nth-child(odd) {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .section:nth-child(even) {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .section:nth-child(3) {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .section:nth-child(4) {
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+
+    .section:nth-child(5) {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .content {
+      text-align: center;
+      max-width: 800px;
+      color: white;
+    }
+
+    .content h1 {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .content h2 {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .content p {
+      font-size: 1.4rem;
+      line-height: 1.8;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+      margin-bottom: 2rem;
+    }
+
+    .demo-info {
+      background: rgba(255,255,255,0.1);
+      padding: 2rem;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .controls {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 1rem;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      font-family: monospace;
+      font-size: 0.9rem;
+      z-index: 1000;
+      max-width: 300px;
+    }
+
+    .controls h3 {
+      margin-bottom: 1rem;
+      color: #4facfe;
+    }
+
+    .controls button {
+      background: #4facfe;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      margin: 0.25rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .controls button:hover {
+      background: #357abd;
+    }
+
+    .controls button.active {
+      background: #43e97b;
+    }
+
+    .status {
+      margin-top: 1rem;
+      padding: 0.5rem;
+      background: rgba(255,255,255,0.1);
+      border-radius: 5px;
+      font-size: 0.8rem;
+    }
+
+    .horizontal-hint {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 1rem 2rem;
+      border-radius: 50px;
+      font-size: 0.9rem;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; }
+    }
+
+    /* 모달 스타일 */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 9999;
+      display: none;
+    }
+
+    .modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      z-index: 10000;
+    }
+
+    .modal h2 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .modal-content {
+      height: 800px;
+      padding: 1rem;
+      background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+      border-radius: 5px;
+      margin: 1rem 0;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .modal-close:hover {
+      color: #333;
+    }
+
+    .scroll-indicator {
+      position: fixed;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 200px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 2px;
+      z-index: 1000;
+    }
+
+    .scroll-thumb {
+      width: 100%;
+      background: #4facfe;
+      border-radius: 2px;
+      transition: height 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      .content h1 { font-size: 2.5rem; }
+      .content h2 { font-size: 2rem; }
+      .content p { font-size: 1.1rem; }
+      .controls {
+        top: 10px;
+        right: 10px;
+        padding: 0.5rem;
+        font-size: 0.8rem;
+        max-width: 200px;
+      }
+      .horizontal-hint {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <h3>🎮 컨트롤</h3>
+    <button id="enableBtn" class="active">활성화</button>
+    <button id="disableBtn">비활성화</button>
+    <button id="debugBtn">디버그</button>
+    <br>
+    <button id="scrollToTop">맨 위로</button>
+    <button id="scrollToBottom">맨 아래로</button>
+    <br>
+    <button id="openModal">🎭 모달 테스트</button>
+    <br><br>
+    <button id="envInfo">📱 환경 정보</button>
+    <button id="optimize">⚡ 자동 최적화</button>
+    <br>
+    <button id="presetSmooth">🎯 부드러움</button>
+    <button id="presetFast">🚀 빠름</button>
+    <button id="presetPrecise">🎨 정밀</button>
+    <br>
+    <button id="resetDefaults">🔄 기본값</button>
+    <br><br>
+    <button id="a11yStatus">♿ 접근성 상태</button>
+    <button id="toggleAnnounce">📢 위치 알림</button>
+    <br>
+    <button id="testScreenReader">🔊 스크린리더 테스트</button>
+    <button id="toggleReducedMotion">🎬 모션 토글</button>
+    <br><br>
+    <button id="toggleScrollbar">📏 스크롤바 토글</button>
+    <button id="customScrollbar">🎨 커스텀 스크롤바</button>
+    <br>
+    <button id="scrollbarStatus">📊 스크롤바 상태</button>
+    
+    <div class="status">
+      <div>현재 위치: <span id="currentPos">0</span>px</div>
+      <div>최대 위치: <span id="maxPos">0</span>px</div>
+      <div>모바일: <span id="isMobile">-</span></div>
+      <div>모달 모드: <span id="modalStatus">비활성</span></div>
+    </div>
+  </div>
+
+  <div class="scroll-indicator">
+    <div class="scroll-thumb" id="scrollThumb"></div>
+  </div>
+
+  <section class="section">
+    <div class="content">
+      <h1>🌟 TwoDimensionScroll</h1>
+      <div class="demo-info">
+        <p>가로와 세로 스크롤을 모두 감지하는 혁신적인 스무스 스크롤 라이브러리</p>
+        <p><strong>✨ 특별한 기능:</strong></p>
+        <p>• 트랙패드의 가로 스크롤을 세로 스크롤로 변환</p>
+        <p>• 매직마우스의 2차원 스크롤 지원</p>
+        <p>• 부드러운 애니메이션과 다양한 이징 옵션</p>
+        <p>• 모바일에서는 자연스러운 네이티브 스크롤</p>
+      </div>
+    </div>
+    <div class="horizontal-hint">
+      👈👉 트랙패드나 매직마우스로 가로 스크롤을 시도해보세요!
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="content">
+      <h2>🚀 가로 스크롤 감지</h2>
+      <div class="demo-info">
+        <p>트랙패드나 매직마우스로 좌우로 스크롤해보세요.</p>
+        <p>가로 스크롤이 자동으로 세로 스크롤로 변환됩니다!</p>
+        <p><strong>지원 디바이스:</strong></p>
+        <p>• MacBook 트랙패드</p>
+        <p>• Magic Mouse / Magic Trackpad</p>
+        <p>• Windows 정밀 터치패드</p>
+        <p>• 마우스 휠 (Shift + 휠)</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="content">
+      <h2>🎯 스마트 방향 감지</h2>
+      <div class="demo-info">
+        <p>가로와 세로를 동시에 스크롤하면 더 큰 축을 기준으로 방향을 결정합니다.</p>
+        <p>복잡한 제스처도 자연스럽게 처리됩니다.</p>
+        <p><strong>처리 방식:</strong></p>
+        <p>• 가로가 더 크면 → 가로를 세로로 변환</p>
+        <p>• 세로가 더 크면 → 세로 스크롤 유지</p>
+        <p>• 동시 발생시 → 벡터 계산으로 최적 방향 결정</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="content">
+      <h2>📱 모바일 최적화</h2>
+      <div class="demo-info">
+        <p>모바일 환경에서는 네이티브 스크롤을 사용합니다.</p>
+        <p>자연스럽고 부드러운 터치 스크롤을 경험하세요.</p>
+        <p><strong>모바일 기능:</strong></p>
+        <p>• 자동 모바일 감지</p>
+        <p>• 네이티브 스크롤 동작</p>
+        <p>• 터치 제스처 지원</p>
+        <p>• 플링(Fling) 제스처 처리</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="content">
+      <h2>⚡ 고성능 애니메이션</h2>
+      <div class="demo-info">
+        <p>requestAnimationFrame을 사용한 부드러운 60fps 애니메이션</p>
+        <p>다양한 이징 함수로 자연스러운 움직임을 구현합니다.</p>
+        <p><strong>성능 특징:</strong></p>
+        <p>• GPU 가속 애니메이션</p>
+        <p>• 메모리 효율적인 구조</p>
+        <p>• 부드러운 60fps 렌더링</p>
+        <p>• 배터리 친화적인 최적화</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 브라우저 기본 동작 방지 -->
+  <script>
+    // Mac의 뒤로가기/앞으로가기 제스처 방지
+    document.addEventListener('wheel', function(e) {
+      // 가로 스크롤 감지 시 기본 동작 방지
+      if (Math.abs(e.deltaX) > 0) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    // 추가적인 제스처 이벤트 방지
+    document.addEventListener('gesturestart', function(e) {
+      e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('gesturechange', function(e) {
+      e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('gestureend', function(e) {
+      e.preventDefault();
+    }, { passive: false });
+  </script>
+
+  <!-- 단일 파일 라이브러리 로드 -->
+  <script src="dist/bundle-simple.js"></script>
+  
+  <!-- 데모 스크립트 -->
+  <script>
+    console.log('🔍 최적화된 라이브러리 초기화 시작...');
+    
+    // 더 안전한 클래스 확인 함수
+    function validateTwoDimensionScrollClass(TwoDimensionScrollClass) {
+      if (!TwoDimensionScrollClass) {
+        console.error('❌ 클래스가 null 또는 undefined입니다.');
+        return false;
+      }
+      
+      if (typeof TwoDimensionScrollClass !== 'function') {
+        console.error('❌ 클래스가 함수가 아닙니다. 타입:', typeof TwoDimensionScrollClass);
+        return false;
+      }
+      
+      // 프로토타입 메서드 확인
+      var requiredMethods = ['on', 'off', 'scrollTo', 'enable', 'disable', 'getCurrentPosition', 'getMaxPosition'];
+      for (var i = 0; i < requiredMethods.length; i++) {
+        var method = requiredMethods[i];
+        if (!TwoDimensionScrollClass.prototype || typeof TwoDimensionScrollClass.prototype[method] !== 'function') {
+          console.error('❌ 필수 메서드가 없습니다:', method);
+          return false;
+        }
+      }
+      
+      console.log('✅ 클래스 유효성 검사 통과');
+      return true;
+    }
+
+    // 라이브러리 초기화 함수
+    function initializeLibrary() {
+      console.log('🔎 TwoDimensionScroll 클래스 탐지 중...');
+      
+      // 전역 변수 확인
+      console.log('🔧 전역 변수 상태:', {
+        'window.TwoDimensionScroll': typeof window.TwoDimensionScroll,
+        'window.TwoDimensionScrollClass': typeof window.TwoDimensionScrollClass
+      });
+
+      var TwoDimensionScrollClass = window.TwoDimensionScroll || window.TwoDimensionScrollClass;
+      
+      if (!validateTwoDimensionScrollClass(TwoDimensionScrollClass)) {
+        console.error('❌ 유효한 TwoDimensionScroll 클래스를 찾을 수 없습니다.');
+        alert('스크롤 라이브러리 로딩에 실패했습니다. 페이지를 새로고침해주세요.');
+        return;
+      }
+      
+      console.log('✅ TwoDimensionScroll 클래스 발견 및 검증 완료');
+
+      try {
+        // 라이브러리 초기화 (환경별 최적화 옵션)
+        var scrollLib = new TwoDimensionScrollClass({
+          // 공통 옵션
+          debug: true,
+          
+          // 환경별 최적화 옵션
+          desktop: {
+            duration: 1000, // ms 단위
+            horizontalSensitivity: 1.2,
+            verticalSensitivity: 1.5,
+            lerp: 0.1,
+            wheelMultiplier: 1.1,
+            precisionMode: true,
+            keyboardScrollAmount: 0.8
+          },
+          mobile: {
+            duration: 800, // ms 단위
+            horizontalSensitivity: 1.8,
+            verticalSensitivity: 2.2,
+            lerp: 0.15,
+            touchMultiplier: 2.5,
+            bounceEffect: true,
+            flingMultiplier: 1.2,
+            touchStopThreshold: 4
+          },
+          tablet: {
+            duration: 900, // ms 단위
+            horizontalSensitivity: 1.5,
+            verticalSensitivity: 1.8,
+            lerp: 0.12,
+            wheelMultiplier: 1.05,
+            touchMultiplier: 2.2,
+            hybridMode: true
+          }
+        });
+
+        console.log('🚀 라이브러리 인스턴스 생성 완료:', scrollLib);
+        
+        // 메서드 재확인
+        if (typeof scrollLib.on !== 'function') {
+          throw new Error('scrollLib.on이 함수가 아닙니다. 타입: ' + typeof scrollLib.on);
+        }
+
+        // UI 요소
+        var enableBtn = document.getElementById('enableBtn');
+        var disableBtn = document.getElementById('disableBtn');
+        var debugBtn = document.getElementById('debugBtn');
+        var scrollToTopBtn = document.getElementById('scrollToTop');
+        var scrollToBottomBtn = document.getElementById('scrollToBottom');
+        var currentPosSpan = document.getElementById('currentPos');
+        var maxPosSpan = document.getElementById('maxPos');
+        var isMobileSpan = document.getElementById('isMobile');
+        var modalStatusSpan = document.getElementById('modalStatus');
+        var scrollThumb = document.getElementById('scrollThumb');
+
+        // 상태 표시
+        var isDebugMode = true;
+
+        // 초기 상태 업데이트
+        function updateStatus() {
+          var currentPos = scrollLib.getCurrentPosition();
+          var maxPos = scrollLib.getMaxPosition();
+          var progress = maxPos > 0 ? (currentPos / maxPos) * 100 : 0;
+          
+          currentPosSpan.textContent = Math.round(currentPos);
+          maxPosSpan.textContent = Math.round(maxPos);
+          isMobileSpan.textContent = /Mobi|Android/i.test(navigator.userAgent) ? 'Yes' : 'No';
+          modalStatusSpan.textContent = scrollLib.isInModalMode() ? '🎭 활성' : '비활성';
+          modalStatusSpan.style.color = scrollLib.isInModalMode() ? '#e74c3c' : '#27ae60';
+          
+          // 스크롤 인디케이터 업데이트
+          scrollThumb.style.height = Math.max(progress, 2) + '%';
+          scrollThumb.style.top = (progress * 0.01 * (200 - scrollThumb.offsetHeight)) + 'px';
+        }
+
+        // 스크롤 이벤트 리스너
+        scrollLib.on(function(data) {
+          updateStatus();
+          
+          if (isDebugMode) {
+            console.log('📊 스크롤 이벤트:', {
+              type: data.type,
+              deltaY: Math.round(data.deltaY),
+              scrollTop: Math.round(data.scrollTop),
+              direction: data.direction === 1 ? '아래' : '위'
+            });
+          }
+        });
+
+        // 컨트롤 버튼 이벤트
+        enableBtn.addEventListener('click', function() {
+          scrollLib.enable();
+          enableBtn.classList.add('active');
+          disableBtn.classList.remove('active');
+        });
+
+        disableBtn.addEventListener('click', function() {
+          scrollLib.disable();
+          disableBtn.classList.add('active');
+          enableBtn.classList.remove('active');
+        });
+
+        debugBtn.addEventListener('click', function() {
+          isDebugMode = !isDebugMode;
+          scrollLib.updateOptions({ debug: isDebugMode });
+          debugBtn.classList.toggle('active', isDebugMode);
+          console.log('🔧 디버그 모드:', isDebugMode ? '활성화' : '비활성화');
+        });
+
+        scrollToTopBtn.addEventListener('click', function() {
+          scrollLib.scrollTo(0, 800);
+        });
+
+        scrollToBottomBtn.addEventListener('click', function() {
+          scrollLib.scrollTo(scrollLib.getMaxPosition(), 800);
+        });
+
+        // 모달 관련 이벤트 핸들러
+        var openModalBtn = document.getElementById('openModal');
+        var closeModalBtn = document.getElementById('closeModal');
+        var modalOverlay = document.getElementById('modalOverlay');
+
+        openModalBtn.addEventListener('click', function() {
+          modalOverlay.style.display = 'block';
+          // 수동 API 테스트 (자동 감지와 함께 사용)
+          scrollLib.pauseForModal();
+          console.log('🎭 모달 열림 - body 스크롤 차단');
+        });
+
+        function closeModal() {
+          modalOverlay.style.display = 'none';
+          scrollLib.resumeFromModal();
+          console.log('🎭 모달 닫힘 - body 스크롤 재개');
+        }
+
+        closeModalBtn.addEventListener('click', closeModal);
+        
+        // 모달 배경 클릭시 닫기
+        modalOverlay.addEventListener('click', function(e) {
+          if (e.target === modalOverlay) {
+            closeModal();
+          }
+        });
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && modalOverlay.style.display === 'block') {
+            closeModal();
+          }
+        });
+
+        // === 환경별 최적화 버튼 이벤트 핸들러 ===
+        
+        // 환경 정보 표시
+        document.getElementById('envInfo').addEventListener('click', function() {
+          var envInfo = scrollLib.getEnvironmentInfo();
+          alert('🌍 현재 환경 정보:\n\n' +
+            '환경: ' + envInfo.current + '\n' +
+            '화면 크기: ' + envInfo.screenWidth + 'x' + envInfo.screenHeight + '\n' +
+            '터치 지원: ' + (envInfo.isTouchCapable ? 'Yes' : 'No') + '\n' +
+            '모바일: ' + (envInfo.isMobile ? 'Yes' : 'No') + '\n' +
+            '태블릿: ' + (envInfo.isTablet ? 'Yes' : 'No') + '\n' +
+            '데스크톱: ' + (envInfo.isDesktop ? 'Yes' : 'No')
+          );
+          console.log('🌍 환경 정보:', envInfo);
+        });
+        
+        // 자동 최적화
+        document.getElementById('optimize').addEventListener('click', function() {
+          scrollLib.optimizeForCurrentEnvironment();
+          alert('⚡ 현재 환경에 맞게 자동 최적화 완료!\n콘솔에서 자세한 정보를 확인하세요.');
+        });
+        
+        // 부드러움 프리셋
+        document.getElementById('presetSmooth').addEventListener('click', function() {
+          scrollLib.applyPerformancePreset('smooth');
+          alert('🎯 부드러움 프리셋 적용 완료!\n더 부드럽고 우아한 스크롤을 경험하세요.');
+        });
+        
+        // 빠름 프리셋
+        document.getElementById('presetFast').addEventListener('click', function() {
+          scrollLib.applyPerformancePreset('fast');
+          alert('🚀 빠름 프리셋 적용 완료!\n더 빠르고 반응적인 스크롤을 경험하세요.');
+        });
+        
+        // 정밀 프리셋
+        document.getElementById('presetPrecise').addEventListener('click', function() {
+          scrollLib.applyPerformancePreset('precise');
+          alert('🎨 정밀 프리셋 적용 완료!\n더 정확하고 세밀한 스크롤을 경험하세요.');
+        });
+        
+        // 기본값 리셋
+        document.getElementById('resetDefaults').addEventListener('click', function() {
+          scrollLib.resetToDefaults();
+          alert('🔄 기본값으로 리셋 완료!\n모든 설정이 초기값으로 돌아갔습니다.');
+        });
+        
+        // === 접근성 테스트 버튼 이벤트 핸들러 ===
+        
+        // 접근성 상태 확인
+        document.getElementById('a11yStatus').addEventListener('click', function() {
+          var status = scrollLib.getAccessibilityStatus();
+          alert('♿ 접근성 상태:\n\n' +
+            '모션 감소: ' + (status.reducedMotionActive ? 'ON' : 'OFF') + '\n' +
+            '키보드 네비게이션: ' + (status.keyboardNavigationActive ? 'ON' : 'OFF') + '\n' +
+            '스크린 리더 최적화: ' + (status.settings.screenReader ? 'ON' : 'OFF') + '\n' +
+            '고대비 모드: ' + (status.settings.highContrast ? 'ON' : 'OFF') + '\n' +
+            'ARIA Live Region: ' + (status.ariaLiveRegionExists ? 'ON' : 'OFF') + '\n' +
+            '위치 알림: ' + (status.options?.announceScrollPosition ? 'ON' : 'OFF')
+          );
+          console.log('♿ 접근성 상태:', status);
+        });
+        
+        // 위치 알림 토글
+        document.getElementById('toggleAnnounce').addEventListener('click', function() {
+          var currentSetting = scrollLib.options.accessibility?.announceScrollPosition;
+          scrollLib.updateAccessibilitySettings({
+            announceScrollPosition: !currentSetting
+          });
+          alert('📢 위치 알림이 ' + (!currentSetting ? '활성화' : '비활성화') + '되었습니다!');
+        });
+        
+        // 스크린리더 테스트
+        document.getElementById('testScreenReader').addEventListener('click', function() {
+          scrollLib.announceScrollPosition(true); // 강제 알림
+          alert('🔊 스크린리더 테스트 완료!\n현재 스크롤 위치가 스크린리더에 알림되었습니다.\n(NVDA, JAWS, VoiceOver 등에서 확인 가능)');
+        });
+        
+        // 모션 감소 모드 토글 (테스트용)
+        document.getElementById('toggleReducedMotion').addEventListener('click', function() {
+          var currentReduced = scrollLib.accessibilitySettings.reducedMotion;
+          
+          // 수동으로 모션 감소 모드 토글
+          scrollLib.handleReducedMotionChange(!currentReduced);
+          
+          alert('🎬 모션 모드가 ' + (!currentReduced ? '감소 모드' : '일반 모드') + '로 변경되었습니다!\n\n' +
+            '실제로는 시스템 설정에서:\n' +
+            '• macOS: 시스템 환경설정 > 접근성 > 디스플레이 > 동작 줄이기\n' +
+            '• Windows: 설정 > 접근성 > 디스플레이 > Windows에서 애니메이션 표시\n' +
+                         '• iOS/Android: 설정 > 접근성 > 동작 줄이기\n' +
+             '에서 설정할 수 있습니다.');
+         });
+         
+         // === 스크롤바 제어 버튼 이벤트 핸들러 ===
+         
+         // 스크롤바 토글
+         document.getElementById('toggleScrollbar').addEventListener('click', function() {
+           var isVisible = scrollLib.toggleScrollbar();
+           alert('📏 스크롤바가 ' + (isVisible ? '표시' : '숨김') + ' 상태로 변경되었습니다!\n\n' + 
+             '현재 상태: ' + (isVisible ? '보임' : '숨김') + '\n' +
+             '페이지를 스크롤해서 확인해보세요.');
+         });
+         
+         // 커스텀 스크롤바 토글
+         document.getElementById('customScrollbar').addEventListener('click', function() {
+           var status = scrollLib.getScrollbarStatus();
+           
+           if (status.customStyle) {
+             // 커스텀 스크롤바 비활성화
+             scrollLib.setCustomScrollbarStyle(false);
+             scrollLib.toggleScrollbar(true); // 스크롤바 표시
+             alert('🎨 기본 스크롤바로 변경되었습니다!');
+           } else {
+             // 커스텀 스크롤바 활성화
+             scrollLib.toggleScrollbar(true); // 스크롤바 표시
+             scrollLib.setCustomScrollbarStyle(true);
+             alert('🎨 커스텀 스크롤바가 적용되었습니다!\n\n' +
+               '• 얇은 스크롤바 (8px)\n' +
+               '• 둥근 모서리\n' +
+               '• 호버 효과\n' +
+               '• 반투명 배경\n\n' +
+               '페이지를 스크롤해서 확인해보세요!');
+           }
+         });
+         
+         // 스크롤바 상태 확인
+         document.getElementById('scrollbarStatus').addEventListener('click', function() {
+           var status = scrollLib.getScrollbarStatus();
+           alert('📊 스크롤바 현재 상태:\n\n' +
+             '표시 여부: ' + (status.visible ? '보임' : '숨김') + '\n' +
+             '커스텀 스타일: ' + (status.customStyle ? 'ON' : 'OFF') + '\n' +
+             '숨김 설정: ' + (status.hidden ? 'ON' : 'OFF') + '\n\n' +
+             '💡 참고: 대부분의 부드러운 스크롤 라이브러리는 깔끔한 UI를 위해 스크롤바를 숨깁니다.\n' +
+             '(lenis, locomotive-scroll 등도 동일)'
+           );
+           console.log('📊 스크롤바 상태:', status);
+         });
+
+        // 주기적 상태 업데이트
+        setInterval(updateStatus, 1000);
+        updateStatus();
+
+        // 리사이즈 이벤트
+        window.addEventListener('resize', function() {
+          setTimeout(updateStatus, 100);
+        });
+
+        // 키보드 단축키
+        document.addEventListener('keydown', function(e) {
+          if (e.ctrlKey || e.metaKey) {
+            switch (e.key) {
+              case 'Home':
+              case 'ArrowUp':
+                e.preventDefault();
+                scrollLib.scrollTo(0);
+                break;
+              case 'End':
+              case 'ArrowDown':
+                e.preventDefault();
+                scrollLib.scrollTo(scrollLib.getMaxPosition());
+                break;
+            }
+          }
+        });
+
+        // 디버그 버튼을 초기값에 맞게 활성화
+        debugBtn.classList.add('active');
+
+        console.log('🎉 모든 초기화 완료!');
+
+        // 환경별 최적화 API 사용법 안내
+        console.log('\n' +
+'🌟 TwoDimensionScroll 환경별 최적화 완료!\n\n' +
+'📱 현재 환경: ' + scrollLib.currentEnvironment + '\n' +
+'🔧 적용된 옵션: lerp=' + scrollLib.options.lerp + ', sensitivity=' + scrollLib.options.horizontalSensitivity + '/' + scrollLib.options.verticalSensitivity + '\n\n' +
+'🚀 새로운 환경별 API:\n' +
+'• scrollLib.getEnvironmentInfo() - 현재 환경 정보 조회\n' +
+'• scrollLib.optimizeForCurrentEnvironment() - 자동 최적화\n' +
+'• scrollLib.applyPerformancePreset("smooth"|"fast"|"precise") - 프리셋 적용\n' +
+'• scrollLib.updateEnvironmentOptions("desktop|mobile|tablet", {옵션}) - 환경별 옵션 업데이트\n' +
+'• scrollLib.resetToDefaults() - 기본값 리셋\n\n' +
+'♿ 새로운 접근성 API:\n' +
+'• scrollLib.getAccessibilityStatus() - 접근성 상태 조회\n' +
+'• scrollLib.updateAccessibilitySettings({설정}) - 접근성 설정 업데이트\n' +
+'• scrollLib.accessibleScrollTo(위치, "알림메시지") - 접근성 고려 스크롤\n' +
+'• scrollLib.announceScrollPosition(강제여부) - 스크롤 위치 알림\n\n' +
+'📏 새로운 스크롤바 제어 API:\n' +
+'• scrollLib.toggleScrollbar(표시여부) - 스크롤바 표시/숨김 토글\n' +
+'• scrollLib.setCustomScrollbarStyle(활성화, 스타일) - 커스텀 스크롤바 설정\n' +
+'• scrollLib.getScrollbarStatus() - 스크롤바 상태 조회\n' +
+'• scrollLib.updateScrollbarStyles() - 스크롤바 스타일 재적용\n\n' +
+'💡 사용 예시:\n' +
+'scrollLib.updateEnvironmentOptions("mobile", { lerp: 0.2, touchMultiplier: 3.0 });\n' +
+'scrollLib.applyPerformancePreset("fast");\n' +
+'scrollLib.updateAccessibilitySettings({ announceScrollPosition: true });\n' +
+'scrollLib.accessibleScrollTo(0, "페이지 최상단으로 이동했습니다");\n' +
+'scrollLib.toggleScrollbar(true); // 스크롤바 표시\n' +
+'scrollLib.setCustomScrollbarStyle(true); // 커스텀 스크롤바 적용\n\n' +
+'🎮 컨트롤 패널에서 다양한 최적화 및 접근성 옵션을 테스트해보세요!\n' +
+'♿ 키보드 네비게이션: Tab, 화살표키, Page Up/Down, Home/End 지원'
+        );
+
+        // 개발자 도구 콘솔에 도움말 출력
+        console.log('\n' +
+'🌟 TwoDimensionScroll 최적화 완료!\n\n' +
+'⚡ 성능 개선사항:\n' +
+'- 애니메이션 속도 2배 향상 (600ms → 400ms)\n' +
+'- 가로 스크롤 민감도 대폭 증가 (1.2 → 6)\n' +
+'- 세로 스크롤 민감도 대폭 증가 (1 → 15)\n' +
+'- 기본 스크롤 완전 차단으로 충돌 방지\n' +
+'- 동적 애니메이션 duration으로 반응성 향상\n\n' +
+'📖 사용법:\n' +
+'- 트랙패드로 가로/세로 스크롤 (훨씬 더 반응적!)\n' +
+'- 매직마우스로 부드러운 2D 스크롤\n' +
+'- 키보드 화살표, Page Up/Down, Home/End\n\n' +
+'🎮 키보드 단축키:\n' +
+'- Ctrl/Cmd + Home/↑: 맨 위로\n' +
+'- Ctrl/Cmd + End/↓: 맨 아래로\n\n' +
+'💡 가로 스크롤을 시도하면 훨씬 더 부드럽고 빠른 반응을 느낄 수 있습니다!'
+        );
+
+      } catch (error) {
+        console.error('❌ 라이브러리 인스턴스 생성 실패:', error);
+        console.error('에러 스택:', error.stack);
+        alert('스크롤 라이브러리 초기화에 실패했습니다: ' + error.message);
+      }
+    }
+
+    // DOM 로드 완료 후 실행
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('📄 DOM 로드 완료');
+        setTimeout(initializeLibrary, 100); // 약간의 지연
+      });
+    } else {
+      console.log('📄 DOM 이미 로드됨');
+      setTimeout(initializeLibrary, 100);
+    }
+  </script>
+
+  <!-- 모달 테스트 -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="modal-close" id="closeModal" aria-label="모달 닫기">&times;</button>
+      <h2>🎭 모달 스크롤 테스트</h2>
+      <p>이 모달 내부에서는 <strong>기본 스크롤</strong>이 작동해야 합니다.</p>
+      <p>백그라운드의 body 스크롤은 자동으로 차단됩니다.</p>
+      
+      <div class="modal-content">
+        <h3>📜 긴 콘텐츠 예시</h3>
+        <p>여기서 스크롤을 테스트해보세요!</p>
+        
+        <div style="margin: 2rem 0;">
+          <h4>🔹 자동 감지 기준:</h4>
+          <ul>
+            <li>HTML5 &lt;dialog&gt; 요소</li>
+            <li>클래스명: modal, dialog, popup, overlay, lightbox</li>
+            <li>ARIA 속성: role="dialog", aria-modal="true"</li>
+            <li>고정 위치 + 높은 z-index (1000 이상)</li>
+          </ul>
+        </div>
+        
+        <div style="margin: 2rem 0;">
+          <h4>🔹 수동 제어 API:</h4>
+          <pre style="background: #f5f5f5; padding: 1rem; border-radius: 5px;">
+// 모달 열기 시
+scrollLib.pauseForModal();
+
+// 모달 닫기 시  
+scrollLib.resumeFromModal();
+
+// 모달 상태 확인
+scrollLib.isInModalMode();
+          </pre>
+        </div>
+        
+        <div style="height: 300px; background: #e8f4fd; padding: 1rem; border-radius: 5px; margin: 1rem 0;">
+          <h4>스크롤 테스트 영역</h4>
+          <p>이 영역을 위아래로 스크롤해보세요. 모달 내부에서만 스크롤이 작동해야 하고, 백그라운드 페이지는 스크롤되지 않아야 합니다.</p>
+          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+          <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+          <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+          <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+          <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.</p>
+          <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.</p>
+          <p>Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.</p>
+          <p>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam.</p>
+        </div>
+        
+        <p>모달을 닫으면 다시 body 스크롤이 활성화됩니다.</p>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html> 

@@ -1,0 +1,62 @@
+{
+  "name": "two-dimension-scroll",
+  "version": "1.0.0",
+  "description": "A smooth scroll library that detects both horizontal and vertical scroll and converts them to vertical smooth scrolling",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./react": {
+      "import": "./dist/react-hook.esm.js",
+      "require": "./dist/react-hook.js",
+      "types": "./dist/react-hook.d.ts"
+    },
+    "./dist/*": "./dist/*"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "serve": "python3 -m http.server 3000 || python -m http.server 3000 || npx serve -l 3000",
+    "serve-node": "node simple-server.js",
+    "serve-http": "npx http-server . -p 3000 --silent"
+  },
+  "keywords": [
+    "scroll",
+    "smooth-scroll",
+    "animation",
+    "two-dimension",
+    "horizontal-scroll",
+    "vertical-scroll",
+    "react",
+    "react-hook",
+    "typescript",
+    "nextjs",
+    "modal-scroll"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=16.8.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^18.0.0",
+    "@types/react": "^18.0.0"
+  },
+  "files": [
+    "dist/",
+    "src/react-hook.js",
+    "src/react-hook.d.ts",
+    "README.md"
+  ]
+} 
