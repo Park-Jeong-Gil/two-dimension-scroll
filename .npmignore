@@ -1,0 +1,45 @@
+# Development files
+src/
+tsconfig.json
+node_modules/
+.git/
+.gitignore
+
+# Test files
+test/
+tests/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Demo and example files
+index.html
+simple-server.js
+react-test.html
+react-example.jsx
+modal-scroll-test.html
+test-import.js
+
+# Documentation (개발 관련)
+MODAL_*.md
+REACT_*.md
+
+# Build files not needed
+*.js.map
+*.d.ts.map
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log 

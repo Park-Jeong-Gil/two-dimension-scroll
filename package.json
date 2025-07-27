@@ -38,7 +38,7 @@
     "nextjs",
     "modal-scroll"
   ],
-  "author": "Your Name",
+  "author": "Park Jeong Gil",
   "license": "MIT",
   "peerDependencies": {
     "react": ">=16.8.0"
