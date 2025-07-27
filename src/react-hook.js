@@ -65,79 +65,135 @@ export function useTwoDimensionScroll(options = {}, config = {}) {
   const [isReady, setIsReady] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
 
-  // 스크롤 인스턴스 초기화
+  // 스크롤 인스턴스 초기화 (데모와 동일한 타이밍)
   useEffect(() => {
     // SSR 환경에서는 실행하지 않음
     if (typeof window === "undefined") return;
 
-    // TwoDimensionScroll 클래스 로드 (사용자 제공 > 동적 로드)
-    const TwoDimensionScroll = ScrollClass || getTwoDimensionScrollClass();
-    if (!TwoDimensionScroll) {
-      console.warn(
-        "🚨 TwoDimensionScroll 자동 감지 실패",
-        "\n🎯 Vite/Webpack 환경에서는 ScrollClass 직접 전달이 필요합니다:",
-        "\n\n✅ 해결 방법:",
-        "\n   import TwoDimensionScroll from 'two-dimension-scroll';",
-        "\n   import { useTwoDimensionScroll } from 'two-dimension-scroll/react';",
-        "\n",
-        "\n   const { scrollTo } = useTwoDimensionScroll(",
-        "\n     { duration: 1000 },",
-        "\n     { ScrollClass: TwoDimensionScroll } // 👈 이 부분을 추가하세요!",
-        "\n   );",
-        "\n\n💡 이렇게 하면 모든 번들러 환경에서 안정적으로 작동합니다."
-      );
-      return;
-    }
-
-    try {
-      // 기본 옵션과 사용자 옵션 병합
-      const defaultOptions = {
-        debug: false, // 프로덕션에서는 로그 비활성화
-        desktop: {
-          duration: 1000,
-          lerp: 0.1,
-          sensitivity: 1.0,
-        },
-        mobile: {
-          duration: 800,
-          lerp: 0.15,
-          sensitivity: 1.2,
-        },
-      };
-
-      const mergedOptions = {
-        ...defaultOptions,
-        ...options,
-        desktop: { ...defaultOptions.desktop, ...options.desktop },
-        mobile: { ...defaultOptions.mobile, ...options.mobile },
-      };
-
-      // 인스턴스 생성
-      scrollRef.current = new TwoDimensionScroll(mergedOptions);
-
-      // 스크롤 이벤트 리스너 등록
-      const handleScroll = (data) => {
-        setScrollPosition(data.scroll || data.scrollTop || 0);
-      };
-
-      if (scrollRef.current.on) {
-        scrollRef.current.on(handleScroll);
+    // 데모와 동일한 초기화 지연 (DOM 안정화 대기)
+    const initTimer = setTimeout(() => {
+      // TwoDimensionScroll 클래스 로드 (사용자 제공 > 동적 로드)
+      const TwoDimensionScroll = ScrollClass || getTwoDimensionScrollClass();
+      if (!TwoDimensionScroll) {
+        console.warn(
+          "🚨 TwoDimensionScroll 자동 감지 실패",
+          "\n🎯 Vite/Webpack 환경에서는 ScrollClass 직접 전달이 필요합니다:",
+          "\n\n✅ 해결 방법:",
+          "\n   import TwoDimensionScroll from 'two-dimension-scroll';",
+          "\n   import { useTwoDimensionScroll } from 'two-dimension-scroll/react';",
+          "\n",
+          "\n   const { scrollTo } = useTwoDimensionScroll(",
+          "\n     { duration: 1000 },",
+          "\n     { ScrollClass: TwoDimensionScroll } // 👈 이 부분을 추가하세요!",
+          "\n   );",
+          "\n\n💡 이렇게 하면 모든 번들러 환경에서 안정적으로 작동합니다."
+        );
+        return;
       }
 
-      setIsReady(true);
+      try {
+        // 기본 옵션과 사용자 옵션 병합 (데모와 동일한 고성능 기본값)
+        const defaultOptions = {
+          debug: true, // ⚡ 성능 비교를 위해 디버그 활성화
+          // 🖥️ 데스크톱 환경 (index.html과 완전 동일)
+          desktop: {
+            duration: 1000,
+            horizontalSensitivity: 1.2,
+            verticalSensitivity: 1.5,
+            lerp: 0.1,
+            wheelMultiplier: 1.1,
+            precisionMode: true,
+            keyboardScrollAmount: 0.8,
+          },
+          // 📱 모바일 환경 (index.html과 완전 동일)
+          mobile: {
+            duration: 800,
+            horizontalSensitivity: 1.8,
+            verticalSensitivity: 2.2,
+            lerp: 0.15,
+            touchMultiplier: 2.5,
+            bounceEffect: true,
+            flingMultiplier: 1.2,
+            touchStopThreshold: 4,
+          },
+          // 📟 태블릿 환경 (index.html과 완전 동일)
+          tablet: {
+            duration: 900,
+            horizontalSensitivity: 1.5,
+            verticalSensitivity: 1.8,
+            lerp: 0.12,
+            wheelMultiplier: 1.05,
+            touchMultiplier: 2.2,
+            hybridMode: true,
+          },
+        };
 
-      if (mergedOptions.debug) {
-        console.log("✅ useTwoDimensionScroll 초기화 완료", {
-          instance: scrollRef.current,
-          options: mergedOptions,
-        });
+        // 🔧 깊은 병합으로 모든 옵션 완벽 적용
+        const mergedOptions = {
+          ...defaultOptions,
+          ...options,
+          desktop: {
+            ...defaultOptions.desktop,
+            ...(options.desktop || {}),
+          },
+          mobile: {
+            ...defaultOptions.mobile,
+            ...(options.mobile || {}),
+          },
+          tablet: {
+            ...defaultOptions.tablet,
+            ...(options.tablet || {}),
+          },
+          accessibility: {
+            ...(defaultOptions.accessibility || {}),
+            ...(options.accessibility || {}),
+          },
+          ui: {
+            ...(defaultOptions.ui || {}),
+            ...(options.ui || {}),
+          },
+        };
+
+        console.log("🎯 React Hook 최종 옵션 (데모와 비교용):", mergedOptions);
+
+        // 인스턴스 생성
+        scrollRef.current = new TwoDimensionScroll(mergedOptions);
+
+        // 스크롤 이벤트 리스너 등록 (성능 최적화된 버전)
+        const handleScroll = (data) => {
+          const newPosition = data.scroll || data.scrollTop || 0;
+          setScrollPosition(newPosition);
+
+          if (mergedOptions.debug) {
+            console.log("📊 React Hook 스크롤 이벤트:", {
+              type: data.type,
+              deltaY: Math.round(data.deltaY || 0),
+              scrollTop: Math.round(newPosition),
+              direction: data.direction === 1 ? "아래" : "위",
+            });
+          }
+        };
+
+        if (scrollRef.current.on) {
+          scrollRef.current.on(handleScroll);
+        }
+
+        setIsReady(true);
+
+        if (mergedOptions.debug) {
+          console.log("✅ useTwoDimensionScroll 초기화 완료", {
+            instance: scrollRef.current,
+            options: mergedOptions,
+          });
+        }
+      } catch (error) {
+        console.error("TwoDimensionScroll 초기화 실패:", error);
       }
-    } catch (error) {
-      console.error("TwoDimensionScroll 초기화 실패:", error);
-    }
+    }, 100); // 데모와 동일한 100ms 지연
 
     // Cleanup 함수
     return () => {
+      clearTimeout(initTimer);
       if (scrollRef.current) {
         try {
           if (scrollRef.current.cleanup) {
