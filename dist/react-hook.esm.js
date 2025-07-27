@@ -79,11 +79,15 @@ export function useTwoDimensionScroll(options = {}, config = {}) {
     const TwoDimensionScroll = ScrollClass || getTwoDimensionScrollClass();
     if (!TwoDimensionScroll) {
       console.warn(
-        "TwoDimensionScroll 클래스를 로드할 수 없습니다.",
-        "\n해결 방법:",
-        "\n1. ScrollClass를 직접 전달: useTwoDimensionScroll(options, { ScrollClass: TwoDimensionScroll })",
-        "\n2. 전역 스크립트 로드: <script src='dist/bundle-simple.js'></script>",
-        "\n3. npm 패키지 재설치: npm install two-dimension-scroll@latest"
+        "🚨 TwoDimensionScroll 클래스를 로드할 수 없습니다.",
+        "\n💡 해결 방법 (추천 순서):",
+        "\n1️⃣ ScrollClass 직접 전달 (가장 안전):",
+        "\n   import TwoDimensionScroll from 'two-dimension-scroll';",
+        "\n   useTwoDimensionScroll(options, { ScrollClass: TwoDimensionScroll })",
+        "\n2️⃣ 패키지 재설치:",
+        "\n   npm install two-dimension-scroll@latest",
+        "\n3️⃣ 전역 스크립트 사용:",
+        "\n   <script src='https://unpkg.com/two-dimension-scroll@latest/dist/bundle-simple.js'></script>"
       );
       return;
     }
@@ -91,7 +95,7 @@ export function useTwoDimensionScroll(options = {}, config = {}) {
     try {
       // 기본 옵션과 사용자 옵션 병합
       const defaultOptions = {
-        debug: process.env.NODE_ENV === "development",
+        debug: false, // 프로덕션에서는 로그 비활성화
         desktop: {
           duration: 1000,
           lerp: 0.1,

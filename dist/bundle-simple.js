@@ -5,7 +5,7 @@
 (function (global) {
   "use strict";
 
-  console.log("🔧 TwoDimensionScroll 라이브러리 로딩 시작...");
+  // Debug log removed for production
 
   // === 이징 함수들 ===
   const Easing = {
@@ -2256,17 +2256,13 @@
   TwoDimensionScroll.Easing = Easing;
 
   // === 전역 변수로 설정 ===
-  console.log("🌍 TwoDimensionScroll 전역 설정 시작...");
+  // Debug log removed for production
 
   if (typeof window !== "undefined") {
     window.TwoDimensionScroll = TwoDimensionScroll;
     window.TwoDimensionScrollClass = TwoDimensionScroll;
 
-    console.log("✅ 전역 변수 설정 완료:", {
-      TwoDimensionScroll: typeof window.TwoDimensionScroll,
-      TwoDimensionScrollClass: typeof window.TwoDimensionScrollClass,
-      인스턴스_테스트: typeof window.TwoDimensionScroll === "function",
-    });
+    // Debug log removed for production
   }
 
   // CommonJS
@@ -2286,7 +2282,7 @@
     global.TwoDimensionScroll = TwoDimensionScroll;
   }
 
-  console.log("🎉 TwoDimensionScroll 라이브러리 로딩 완료!");
+  // Debug log removed for production
 
   // === React 호환성 및 SSR 안전성 강화 ===
 

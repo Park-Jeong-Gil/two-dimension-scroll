@@ -2,6 +2,17 @@
 
 import { DependencyList } from "react";
 
+// TwoDimensionScroll 클래스 타입
+export interface TwoDimensionScrollClass {
+  new (options?: TwoDimensionScrollOptions): TwoDimensionScrollInstance;
+}
+
+// Hook 설정 타입
+export interface TwoDimensionScrollHookConfig {
+  ScrollClass?: TwoDimensionScrollClass;
+  deps?: DependencyList;
+}
+
 // 기본 TwoDimensionScroll 타입들
 export interface TwoDimensionScrollOptions {
   duration?: number;
@@ -67,6 +78,7 @@ export interface TwoDimensionScrollInstance {
   destroy: () => void;
   cleanup: () => () => void;
   getReactCompatibilityInfo: () => ReactCompatibilityInfo;
+  getMaxPosition: () => number;
   limit?: number;
   isScrolling?: boolean;
 }
@@ -98,7 +110,15 @@ export interface ModalScrollHookReturn {
   toggleModal: () => void;
 }
 
-// React Hook 함수들
+// React Hook 함수들 (오버로드로 하위 호환성 지원)
+
+// 새로운 API: ScrollClass를 포함한 config 객체
+export function useTwoDimensionScroll(
+  options?: TwoDimensionScrollOptions,
+  config?: TwoDimensionScrollHookConfig
+): TwoDimensionScrollHookReturn;
+
+// 기존 API: 의존성 배열 (하위 호환성)
 export function useTwoDimensionScroll(
   options?: TwoDimensionScrollOptions,
   deps?: DependencyList

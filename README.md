@@ -43,24 +43,41 @@ const scroll = new TwoDimensionScroll({
 });
 ```
 
-### React Hook 사용법 (권장)
+### React Hook 사용법
 
+React에서는 **두 가지 방법** 모두 지원합니다:
+
+> 💡 **권장사항**: 방법 1이 더 간단하지만, 복잡한 번들러 환경이나 SSR에서는 방법 2가 더 안정적입니다.
+
+#### 방법 1: 간단한 사용 (자동 감지)
 ```tsx
-// React Hook import
 import { useTwoDimensionScroll } from 'two-dimension-scroll/react';
 
 function App() {
-  const { isReady, scrollPosition, scrollTo } = useTwoDimensionScroll({
+  const { isReady, scrollPosition, scrollTo, scrollInfo } = useTwoDimensionScroll({
     duration: 1200,
-    desktop: {
-      lerp: 0.1,
-      sensitivity: 1.2
-    },
-    mobile: {
-      lerp: 0.15,
-      sensitivity: 0.8
-    }
+    desktop: { lerp: 0.1, sensitivity: 1.2 },
+    mobile: { lerp: 0.15, sensitivity: 0.8 }
   });
+  // ScrollClass 전달 없이도 자동으로 클래스를 찾아서 작동합니다!
+
+  if (!isReady) return <div>Loading...</div>;
+```
+
+#### 방법 2: 명시적 전달 (더 안전함, 권장)
+```tsx
+import TwoDimensionScroll from 'two-dimension-scroll';
+import { useTwoDimensionScroll } from 'two-dimension-scroll/react';
+
+function App() {
+  const { isReady, scrollPosition, scrollTo, scrollInfo } = useTwoDimensionScroll(
+    {
+      duration: 1200,
+      desktop: { lerp: 0.1, sensitivity: 1.2 },
+      mobile: { lerp: 0.15, sensitivity: 0.8 }
+    },
+    { ScrollClass: TwoDimensionScroll } // 클래스 직접 전달로 최대 안정성 보장
+  );
 
   if (!isReady) return <div>Loading...</div>;
 
@@ -337,9 +354,10 @@ function ScrollProgress() {
 
 ### React Hook API 완전 가이드
 
-#### `useTwoDimensionScroll(options, deps)`
+#### `useTwoDimensionScroll(options, config)`
 
 ```tsx
+// 새로운 API (권장)
 const {
   // 상태 정보
   instance,           // TwoDimensionScroll 인스턴스
@@ -357,7 +375,16 @@ const {
   
   // React 전용
   getReactInfo       // () => ReactCompatibilityInfo
-} = useTwoDimensionScroll(options, deps);
+} = useTwoDimensionScroll(options, { ScrollClass, deps });
+
+// config 매개변수:
+// {
+//   ScrollClass?: TwoDimensionScrollClass,  // 클래스 직접 전달 (권장)
+//   deps?: DependencyList                   // React 의존성 배열
+// }
+
+// 기존 API (하위 호환성)
+const { ... } = useTwoDimensionScroll(options, deps);
 ```
 
 #### `useModalScroll()`
