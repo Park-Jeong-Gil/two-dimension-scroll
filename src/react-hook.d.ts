@@ -22,24 +22,48 @@ export interface TwoDimensionScrollOptions {
   debug?: boolean;
   desktop?: {
     duration?: number;
+    easing?: (t: number) => number;
+    horizontalSensitivity?: number;
+    verticalSensitivity?: number;
     lerp?: number;
-    sensitivity?: number;
     wheelMultiplier?: number;
     touchMultiplier?: number;
+    smoothWheel?: boolean;
+    touchStopThreshold?: number;
+    keyboardScrollAmount?: number;
+    precisionMode?: boolean;
+    keyboardScrollSpeed?: number;
+    skipInertia?: boolean;
   };
   mobile?: {
     duration?: number;
+    easing?: (t: number) => number;
+    horizontalSensitivity?: number;
+    verticalSensitivity?: number;
     lerp?: number;
-    sensitivity?: number;
     wheelMultiplier?: number;
     touchMultiplier?: number;
+    smoothWheel?: boolean;
+    touchStopThreshold?: number;
+    flingMultiplier?: number;
+    bounceEffect?: boolean;
+    fastScrollThreshold?: number;
+    touchScrollSpeed?: number;
+    skipInertia?: boolean;
   };
   tablet?: {
     duration?: number;
+    easing?: (t: number) => number;
+    horizontalSensitivity?: number;
+    verticalSensitivity?: number;
     lerp?: number;
-    sensitivity?: number;
     wheelMultiplier?: number;
     touchMultiplier?: number;
+    smoothWheel?: boolean;
+    touchStopThreshold?: number;
+    hybridMode?: boolean;
+    adaptiveSpeed?: boolean;
+    skipInertia?: boolean;
   };
   accessibility?: {
     reducedMotion?: boolean;
