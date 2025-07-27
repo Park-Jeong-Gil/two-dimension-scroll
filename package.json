@@ -1,6 +1,6 @@
 {
   "name": "two-dimension-scroll",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A smooth scroll library that detects both horizontal and vertical scroll and converts them to vertical smooth scrolling",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -59,4 +59,4 @@
     "src/react-hook.d.ts",
     "README.md"
   ]
-} 
+}
