@@ -19,37 +19,32 @@ function getTwoDimensionScrollClass() {
     return TwoDimensionScrollClass;
   }
 
-  // 2. npm 모듈에서 import 시도 (여러 방법)
+  // 2. npm 모듈에서 import 시도 (Vite/번들러 호환)
   try {
-    // 방법 1: 메인 패키지에서 import
-    const packageModule = require("two-dimension-scroll");
-    TwoDimensionScrollClass =
-      packageModule.default || // ES Module style export
-      packageModule.TwoDimensionScroll || // Named export
-      packageModule; // Direct export
-    if (
-      TwoDimensionScrollClass &&
-      typeof TwoDimensionScrollClass === "function"
-    ) {
-      return TwoDimensionScrollClass;
+    // Vite/Webpack 환경에서는 동적 require가 지원되지 않으므로
+    // ScrollClass 직접 전달을 강력히 권장
+    if (typeof require !== "undefined" && typeof window !== "undefined") {
+      // 브라우저에서 require가 있는 경우에만 시도 (예: Node.js 환경)
+      const packageModule = require("two-dimension-scroll");
+      TwoDimensionScrollClass =
+        packageModule.default || // ES Module style export
+        packageModule.TwoDimensionScroll || // Named export
+        packageModule; // Direct export
+      if (
+        TwoDimensionScrollClass &&
+        typeof TwoDimensionScrollClass === "function"
+      ) {
+        return TwoDimensionScrollClass;
+      }
+    } else {
+      // Vite/Webpack 환경: 자동 감지 불가능
+      throw new Error("Dynamic require not supported in bundler environment");
     }
   } catch (error) {
-    console.debug("방법 1 실패:", error.message);
-  }
-
-  try {
-    // 방법 2: 직접 dist/index.js에서 import
-    const distModule = require("./index.js");
-    TwoDimensionScrollClass =
-      distModule.TwoDimensionScroll || distModule.default || distModule;
-    if (
-      TwoDimensionScrollClass &&
-      typeof TwoDimensionScrollClass === "function"
-    ) {
-      return TwoDimensionScrollClass;
-    }
-  } catch (error) {
-    console.debug("방법 2 실패:", error.message);
+    console.debug(
+      "자동 감지 실패 (Vite/번들러 환경에서는 정상):",
+      error.message
+    );
   }
 
   return null;
@@ -79,15 +74,17 @@ export function useTwoDimensionScroll(options = {}, config = {}) {
     const TwoDimensionScroll = ScrollClass || getTwoDimensionScrollClass();
     if (!TwoDimensionScroll) {
       console.warn(
-        "🚨 TwoDimensionScroll 클래스를 로드할 수 없습니다.",
-        "\n💡 해결 방법 (추천 순서):",
-        "\n1️⃣ ScrollClass 직접 전달 (가장 안전):",
+        "🚨 TwoDimensionScroll 자동 감지 실패",
+        "\n🎯 Vite/Webpack 환경에서는 ScrollClass 직접 전달이 필요합니다:",
+        "\n\n✅ 해결 방법:",
         "\n   import TwoDimensionScroll from 'two-dimension-scroll';",
-        "\n   useTwoDimensionScroll(options, { ScrollClass: TwoDimensionScroll })",
-        "\n2️⃣ 패키지 재설치:",
-        "\n   npm install two-dimension-scroll@latest",
-        "\n3️⃣ 전역 스크립트 사용:",
-        "\n   <script src='https://unpkg.com/two-dimension-scroll@latest/dist/bundle-simple.js'></script>"
+        "\n   import { useTwoDimensionScroll } from 'two-dimension-scroll/react';",
+        "\n",
+        "\n   const { scrollTo } = useTwoDimensionScroll(",
+        "\n     { duration: 1000 },",
+        "\n     { ScrollClass: TwoDimensionScroll } // 👈 이 부분을 추가하세요!",
+        "\n   );",
+        "\n\n💡 이렇게 하면 모든 번들러 환경에서 안정적으로 작동합니다."
       );
       return;
     }

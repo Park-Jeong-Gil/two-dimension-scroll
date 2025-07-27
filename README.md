@@ -45,11 +45,13 @@ const scroll = new TwoDimensionScroll({
 
 ### React Hook 사용법
 
-React에서는 **두 가지 방법** 모두 지원합니다:
+React에서는 **두 가지 방법**을 지원합니다:
 
-> 💡 **권장사항**: 방법 1이 더 간단하지만, 복잡한 번들러 환경이나 SSR에서는 방법 2가 더 안정적입니다.
+> ⚠️ **Vite/Webpack 환경**: 동적 require 미지원으로 **방법 2 (ScrollClass 직접 전달) 필수**  
+> 💡 **Create React App**: 방법 1, 2 모두 지원  
+> 🔧 **Next.js/SSR**: 방법 2 권장
 
-#### 방법 1: 간단한 사용 (자동 감지)
+#### 방법 1: 간단한 사용 (자동 감지) ⚠️ Vite 미지원
 ```tsx
 import { useTwoDimensionScroll } from 'two-dimension-scroll/react';
 
@@ -60,11 +62,12 @@ function App() {
     mobile: { lerp: 0.15, sensitivity: 0.8 }
   });
   // ScrollClass 전달 없이도 자동으로 클래스를 찾아서 작동합니다!
+  // ⚠️ 주의: Vite, Webpack 환경에서는 작동하지 않습니다.
 
   if (!isReady) return <div>Loading...</div>;
 ```
 
-#### 방법 2: 명시적 전달 (더 안전함, 권장)
+#### 방법 2: 명시적 전달 (권장, ✅ Vite 호환)
 ```tsx
 import TwoDimensionScroll from 'two-dimension-scroll';
 import { useTwoDimensionScroll } from 'two-dimension-scroll/react';
