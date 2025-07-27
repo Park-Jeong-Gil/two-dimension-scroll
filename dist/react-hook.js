@@ -132,12 +132,14 @@ export function useTwoDimensionScroll(options = {}, deps = []) {
   const getScrollInfo = useCallback(() => {
     if (!scrollRef.current) return null;
 
+    const maxPosition = scrollRef.current.getMaxPosition
+      ? scrollRef.current.getMaxPosition()
+      : 0;
+
     return {
       position: scrollPosition,
-      maxPosition: scrollRef.current.limit || 0,
-      progress: scrollRef.current.limit
-        ? scrollPosition / scrollRef.current.limit
-        : 0,
+      maxPosition: maxPosition,
+      progress: maxPosition > 0 ? scrollPosition / maxPosition : 0,
       isScrolling: scrollRef.current.isScrolling || false,
     };
   }, [scrollPosition]);
