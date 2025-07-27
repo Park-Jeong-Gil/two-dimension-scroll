@@ -3,13 +3,69 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 
+// TwoDimensionScroll 클래스를 동적으로 import
+let TwoDimensionScrollClass = null;
+
+// 클래스 로드 함수
+function getTwoDimensionScrollClass() {
+  if (TwoDimensionScrollClass) return TwoDimensionScrollClass;
+
+  // 브라우저 환경에서만 실행
+  if (typeof window === "undefined") return null;
+
+  // 1. 전역에서 찾기 (script 태그로 로드된 경우)
+  if (window.TwoDimensionScroll) {
+    TwoDimensionScrollClass = window.TwoDimensionScroll;
+    return TwoDimensionScrollClass;
+  }
+
+  // 2. npm 모듈에서 import 시도 (여러 방법)
+  try {
+    // 방법 1: 메인 패키지에서 import
+    const packageModule = require("two-dimension-scroll");
+    TwoDimensionScrollClass =
+      packageModule.default || // ES Module style export
+      packageModule.TwoDimensionScroll || // Named export
+      packageModule; // Direct export
+    if (
+      TwoDimensionScrollClass &&
+      typeof TwoDimensionScrollClass === "function"
+    ) {
+      return TwoDimensionScrollClass;
+    }
+  } catch (error) {
+    console.debug("방법 1 실패:", error.message);
+  }
+
+  try {
+    // 방법 2: 직접 dist/index.js에서 import
+    const distModule = require("./index.js");
+    TwoDimensionScrollClass =
+      distModule.TwoDimensionScroll || distModule.default || distModule;
+    if (
+      TwoDimensionScrollClass &&
+      typeof TwoDimensionScrollClass === "function"
+    ) {
+      return TwoDimensionScrollClass;
+    }
+  } catch (error) {
+    console.debug("방법 2 실패:", error.message);
+  }
+
+  return null;
+}
+
 /**
  * TwoDimensionScroll을 React에서 쉽게 사용하기 위한 공식 훅
  * @param {Object} options - TwoDimensionScroll 옵션
- * @param {Object} deps - 의존성 배열 (옵션 변경 시 재초기화)
+ * @param {Object} config - 추가 설정 (deps, ScrollClass 등)
  * @returns {Object} 스크롤 인스턴스와 유틸리티 함수들
  */
-export function useTwoDimensionScroll(options = {}, deps = []) {
+export function useTwoDimensionScroll(options = {}, config = {}) {
+  // config가 배열이면 기존 방식 (하위 호환성)
+  const isLegacyAPI = Array.isArray(config);
+  const deps = isLegacyAPI ? config : config.deps || [];
+  const ScrollClass = isLegacyAPI ? null : config.ScrollClass;
   const scrollRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -19,10 +75,15 @@ export function useTwoDimensionScroll(options = {}, deps = []) {
     // SSR 환경에서는 실행하지 않음
     if (typeof window === "undefined") return;
 
-    // TwoDimensionScroll 로드 확인
-    if (!window.TwoDimensionScroll) {
+    // TwoDimensionScroll 클래스 로드 (사용자 제공 > 동적 로드)
+    const TwoDimensionScroll = ScrollClass || getTwoDimensionScrollClass();
+    if (!TwoDimensionScroll) {
       console.warn(
-        "TwoDimensionScroll이 로드되지 않았습니다. 스크립트를 먼저 로드해주세요."
+        "TwoDimensionScroll 클래스를 로드할 수 없습니다.",
+        "\n해결 방법:",
+        "\n1. ScrollClass를 직접 전달: useTwoDimensionScroll(options, { ScrollClass: TwoDimensionScroll })",
+        "\n2. 전역 스크립트 로드: <script src='dist/bundle-simple.js'></script>",
+        "\n3. npm 패키지 재설치: npm install two-dimension-scroll@latest"
       );
       return;
     }
@@ -51,7 +112,7 @@ export function useTwoDimensionScroll(options = {}, deps = []) {
       };
 
       // 인스턴스 생성
-      scrollRef.current = new window.TwoDimensionScroll(mergedOptions);
+      scrollRef.current = new TwoDimensionScroll(mergedOptions);
 
       // 스크롤 이벤트 리스너 등록
       const handleScroll = (data) => {
