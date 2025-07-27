@@ -1331,3 +1331,48 @@ MIT License. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 ---
 
 **Made with ❤️ for developers who love smooth scrolling** 
+
+## 🚀 Build Scripts
+
+### Development Build (콘솔 로그 유지)
+```bash
+npm run build:dev
+```
+- 콘솔 로그 유지 (디버깅용)
+- 소스맵 포함
+- 압축 없음
+
+### Production Build (콘솔 로그 제거)
+```bash
+npm run build:prod
+# 또는
+npm run build
+```
+- **모든 콘솔 로그 자동 제거** (`console.log`, `console.info`, `console.debug` 등)
+- `console.error`, `console.warn`은 유지 (옵션)
+- 코드 압축 및 최적화
+- 소스맵 제거
+
+### Watch Mode (개발용)
+```bash
+npm run dev
+```
+- 파일 변경 시 자동 재빌드
+- 개발 모드로 빌드
+
+---
+
+## 📦 Build Configuration
+
+### 콘솔 로그 제거 설정
+- **프로덕션 빌드**: 모든 디버그 로그 자동 제거
+- **개발 빌드**: 디버그 로그 유지 (디버깅 편의성)
+- **Error/Warn**: 프로덕션에서도 유지 (선택 가능)
+
+### 빌드 도구
+- **Rollup**: 모듈 번들링
+- **Babel**: 코드 변환 및 콘솔 로그 제거
+- **TypeScript**: 타입 정의 생성
+- **Terser**: 코드 압축 (프로덕션)
+
+--- 

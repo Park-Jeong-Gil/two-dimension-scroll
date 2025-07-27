@@ -16,6 +16,14 @@ export declare class TwoDimensionScroll {
     private scrollCallbacks;
     private isMobileDevice;
     private passive;
+    private lastTouchY;
+    private lastTouchX;
+    private lastTouchTime;
+    private touchVelocityX;
+    private touchVelocityY;
+    private touchMoveCount;
+    private touchStopTimer;
+    private isModalOpen;
     constructor(options?: TwoDimensionScrollOptions);
     /**
      * 라이브러리 초기화
@@ -26,7 +34,7 @@ export declare class TwoDimensionScroll {
      */
     private bindEvents;
     /**
-     * 휠 이벤트 핸들러
+     * 휠 이벤트 핸들러 (데모와 동일한 성능)
      */
     private onWheel;
     /**
@@ -34,11 +42,11 @@ export declare class TwoDimensionScroll {
      */
     private onTouchStart;
     /**
-     * 터치 이동 이벤트 핸들러
+     * 터치 이동 이벤트 핸들러 (데모와 완전히 동일)
      */
     private onTouchMove;
     /**
-     * 터치 종료 이벤트 핸들러
+     * 터치 종료 이벤트 핸들러 (데모와 완전히 동일)
      */
     private onTouchEnd;
     /**
@@ -54,11 +62,20 @@ export declare class TwoDimensionScroll {
      */
     private calculateCombinedDelta;
     /**
-     * 스크롤 처리
+     * 스크롤 처리 (데모 수준 극한 성능)
      */
     private handleScroll;
     /**
-     * 부드러운 스크롤 실행
+     * lenis 스타일 스크롤 추가 함수 (데모와 동일)
+     */
+    private addToScroll;
+    /**
+     * lenis 스타일 애니메이션 루프 시작 (데모와 동일)
+     */
+    private startAnimationLoop;
+    private targetScroll;
+    /**
+     * 부드러운 스크롤 실행 (극한 성능 모드)
      */
     private smoothScrollTo;
     /**

@@ -1,6 +1,7 @@
 {
   "name": "two-dimension-scroll",
   "version": "1.0.7",
+  "type": "module",
   "description": "A smooth scroll library that detects both horizontal and vertical scroll and converts them to vertical smooth scrolling",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -19,8 +20,11 @@
     "./dist/*": "./dist/*"
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "npm run build:prod",
+    "build:dev": "rollup -c --environment NODE_ENV:development && tsc --emitDeclarationOnly",
+    "build:prod": "rollup -c --environment NODE_ENV:production && tsc --emitDeclarationOnly",
+    "prepublishOnly": "npm run build:prod",
+    "dev": "rollup -c --watch",
     "serve": "python3 -m http.server 3000 || python -m http.server 3000 || npx serve -l 3000",
     "serve-node": "node simple-server.js",
     "serve-http": "npx http-server . -p 3000 --silent"
@@ -49,14 +53,22 @@
     }
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "@types/node": "^18.0.0",
-    "@types/react": "^18.0.0"
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-commonjs": "^25.0.8",
+    "@rollup/plugin-node-resolve": "^15.3.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/node": "^24.1.0",
+    "babel-plugin-transform-remove-console": "^6.9.4",
+    "rollup": "^4.46.0",
+    "tslib": "^2.8.1",
+    "typescript": "^5.0.0"
   },
   "files": [
-    "dist/",
-    "src/react-hook.js",
-    "src/react-hook.d.ts",
-    "README.md"
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
   ]
 }

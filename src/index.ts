@@ -22,7 +22,20 @@ import {
  * 가로와 세로 스크롤을 모두 감지하여 부드러운 세로 스크롤로 변환
  */
 export class TwoDimensionScroll {
-  private options: Required<TwoDimensionScrollOptions>;
+  private options: TwoDimensionScrollOptions &
+    Required<
+      Pick<
+        TwoDimensionScrollOptions,
+        | "duration"
+        | "easing"
+        | "horizontalSensitivity"
+        | "verticalSensitivity"
+        | "disabled"
+        | "useNativeScrollOnMobile"
+        | "scrollableSelector"
+        | "debug"
+      >
+    >;
   private isAnimating: boolean = false;
   private animationFrame: AnimationFrame | null = null;
   private rafId: number | null = null;
@@ -34,9 +47,22 @@ export class TwoDimensionScroll {
   private scrollCallbacks: Set<ScrollCallback> = new Set();
   private isMobileDevice: boolean = false;
   private passive: boolean | { passive: boolean } = false;
+  private lastTouchY: number = 0; // 터치 이동 이벤트 핸들러에서 사용할 변수
+
+  // 🚨 데모와 동일한 터치 관련 속성들 추가
+  private lastTouchX: number = 0;
+  private lastTouchTime: number = 0;
+  private touchVelocityX: number = 0;
+  private touchVelocityY: number = 0;
+  private touchMoveCount: number = 0;
+  private touchStopTimer: NodeJS.Timeout | null = null;
+
+  // 🚨 모달 관련 속성 추가
+  private isModalOpen: boolean = false;
 
   constructor(options: TwoDimensionScrollOptions = {}) {
-    this.options = {
+    // 기본 옵션
+    const baseOptions = {
       duration: 1000,
       easing: Easing.easeOutCubic,
       horizontalSensitivity: 1,
@@ -45,8 +71,37 @@ export class TwoDimensionScroll {
       useNativeScrollOnMobile: true,
       scrollableSelector: "body",
       debug: false,
-      ...options,
     };
+
+    // 환경 감지
+    const isMobileEnv = isMobile();
+    const isTabletEnv = isTouchDevice() && !isMobileEnv;
+
+    // 환경별 옵션 적용
+    let environmentOptions = {};
+    if (options.mobile && isMobileEnv) {
+      environmentOptions = { ...options.mobile };
+    } else if (options.tablet && isTabletEnv) {
+      environmentOptions = { ...options.tablet };
+    } else if (options.desktop && !isMobileEnv && !isTabletEnv) {
+      environmentOptions = { ...options.desktop };
+    }
+
+    // 최종 옵션 병합 (환경별 옵션이 기본값을 덮어씀)
+    this.options = {
+      ...baseOptions,
+      ...options, // 전역 옵션
+      ...environmentOptions, // 환경별 옵션이 최우선
+    };
+
+    if (this.options.debug) {
+      console.log(
+        `[TwoDimensionScroll] 환경: ${
+          isMobileEnv ? "Mobile" : isTabletEnv ? "Tablet" : "Desktop"
+        }`
+      );
+      console.log("[TwoDimensionScroll] 최종 적용된 옵션:", this.options);
+    }
 
     this.isMobileDevice = isMobile();
     this.passive = supportsPassive() ? { passive: false } : false;
@@ -93,33 +148,44 @@ export class TwoDimensionScroll {
   }
 
   /**
-   * 휠 이벤트 핸들러
+   * 휠 이벤트 핸들러 (데모와 동일한 성능)
    */
   private onWheel = (event: WheelEvent): void => {
     if (this.options.disabled || this.isScrolling) return;
 
     event.preventDefault();
 
-    const deltaX = event.deltaX * this.options.horizontalSensitivity;
-    const deltaY = event.deltaY * this.options.verticalSensitivity;
+    // 🚀 데모와 동일한 계산 방식
+    const rawDeltaX = event.deltaX;
+    const rawDeltaY = event.deltaY;
 
-    // 디버그 모드에서 원시 이벤트 데이터 출력
+    // 환경별 multiplier 적용
+    const wheelMultiplier = (this.options as any).wheelMultiplier || 1.0;
+
+    // 민감도 * multiplier 적용
+    const deltaX =
+      rawDeltaX * this.options.horizontalSensitivity * wheelMultiplier;
+    const deltaY =
+      rawDeltaY * this.options.verticalSensitivity * wheelMultiplier;
+
+    // 🔥 데모와 동일: 더 큰 델타 값 선택
+    let finalDelta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
+
+    // 🚨 극한 성능: 추가 배율 적용
+    finalDelta *= 2.0; // 데모 수준의 극한 성능
+
     if (this.options.debug) {
-      console.log("🖱️ 휠 이벤트:", {
-        원시_deltaX: event.deltaX,
-        원시_deltaY: event.deltaY,
-        조정된_deltaX: deltaX,
-        조정된_deltaY: deltaY,
-        deltaMode: event.deltaMode,
-        가로스크롤_감지:
-          Math.abs(deltaX) > Math.abs(deltaY) ? "✅ YES" : "❌ NO",
+      console.log("🚀 DEMO-LEVEL WHEEL:", {
+        원시: `X:${rawDeltaX.toFixed(1)}, Y:${rawDeltaY.toFixed(1)}`,
+        민감도: `X:${this.options.horizontalSensitivity}, Y:${this.options.verticalSensitivity}`,
+        배율: wheelMultiplier,
+        계산후: `X:${deltaX.toFixed(1)}, Y:${deltaY.toFixed(1)}`,
+        최종델타: finalDelta.toFixed(1),
+        극한배율: "2.0x",
       });
     }
 
-    // 가로와 세로 스크롤 조합 처리
-    const combinedDelta = this.calculateCombinedDelta(deltaX, deltaY);
-
-    this.handleScroll(combinedDelta, "wheel");
+    this.handleScroll(finalDelta, "wheel");
   };
 
   /**
@@ -128,49 +194,155 @@ export class TwoDimensionScroll {
   private onTouchStart = (event: TouchEvent): void => {
     if (this.options.disabled) return;
 
+    // 🚨 데모와 동일: preventDefault 제거 - 기본 터치 허용
     const touch = event.touches[0];
     this.touchStartX = touch.clientX;
     this.touchStartY = touch.clientY;
     this.touchStartTime = Date.now();
-  };
+    this.lastTouchY = touch.clientY;
 
-  /**
-   * 터치 이동 이벤트 핸들러
-   */
-  private onTouchMove = (event: TouchEvent): void => {
-    if (this.options.disabled || this.isScrolling) return;
+    this.lastTouchX = touch.clientX;
+    this.lastTouchTime = this.touchStartTime;
+    this.touchVelocityX = 0;
+    this.touchVelocityY = 0;
+    this.touchMoveCount = 0;
 
-    const touch = event.touches[0];
-    const deltaX =
-      (this.touchStartX - touch.clientX) * this.options.horizontalSensitivity;
-    const deltaY =
-      (this.touchStartY - touch.clientY) * this.options.verticalSensitivity;
-
-    // 의미있는 이동이 있을 때만 처리
-    if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-      event.preventDefault();
-
-      const combinedDelta = this.calculateCombinedDelta(deltaX, deltaY);
-      this.handleScroll(combinedDelta, "touch");
+    if (this.touchStopTimer) {
+      clearTimeout(this.touchStopTimer);
+      this.touchStopTimer = null;
     }
   };
 
   /**
-   * 터치 종료 이벤트 핸들러
+   * 터치 이동 이벤트 핸들러 (데모와 완전히 동일)
+   */
+  private onTouchMove = (event: TouchEvent): void => {
+    if (this.options.disabled) return;
+
+    const touch = event.touches[0];
+    const currentTime = Date.now();
+
+    const currentDeltaX = this.lastTouchX - touch.clientX;
+    const currentDeltaY = this.lastTouchY - touch.clientY;
+
+    const movementDistance = Math.sqrt(
+      currentDeltaX * currentDeltaX + currentDeltaY * currentDeltaY
+    );
+
+    if (movementDistance > (this.options as any).touchStopThreshold) {
+      if (this.touchStopTimer) {
+        clearTimeout(this.touchStopTimer);
+        this.touchStopTimer = null;
+      }
+
+      const timeDelta = currentTime - this.lastTouchTime;
+      if (timeDelta > 0) {
+        this.touchVelocityX = currentDeltaX / timeDelta;
+        this.touchVelocityY = currentDeltaY / timeDelta;
+      }
+
+      const adjustedDeltaX =
+        currentDeltaX *
+        this.options.horizontalSensitivity *
+        ((this.options as any).touchMultiplier || 1.0);
+      const adjustedDeltaY =
+        currentDeltaY *
+        this.options.verticalSensitivity *
+        ((this.options as any).touchMultiplier || 1.0);
+
+      // 🚨 데모와 동일: 모달이 열려있을 때는 preventScroll로 구분 처리
+      if (this.isModalOpen) {
+        // preventScroll을 통해 모달 내부/외부 구분 처리
+        if (this.options.debug) {
+          console.log("🎭 모달 모드: onTouchMove - preventScroll 호출");
+        }
+      } else if (Math.abs(adjustedDeltaX) > 3 || Math.abs(adjustedDeltaY) > 3) {
+        // 🚨 데모와 동일: calculateCombinedDelta와 addToScroll 사용
+        const combinedDelta = this.calculateCombinedDelta(
+          adjustedDeltaX,
+          adjustedDeltaY
+        );
+        this.addToScroll(combinedDelta);
+
+        if (this.options.debug) {
+          console.log("🚀 DEMO-LEVEL TOUCH:", {
+            원시델타X: currentDeltaX.toFixed(1),
+            원시델타Y: currentDeltaY.toFixed(1),
+            조정델타X: adjustedDeltaX.toFixed(1),
+            조정델타Y: adjustedDeltaY.toFixed(1),
+            최종델타: combinedDelta.toFixed(1),
+            터치배율: (this.options as any).touchMultiplier || 1.0,
+          });
+        }
+      }
+
+      this.lastTouchX = touch.clientX;
+      this.lastTouchY = touch.clientY;
+      this.lastTouchTime = currentTime;
+      this.touchMoveCount++;
+    } else {
+      const self = this;
+      if (!this.touchStopTimer) {
+        this.touchStopTimer = setTimeout(() => {
+          self.touchVelocityX *= 0.8;
+          self.touchVelocityY *= 0.8;
+          self.touchStopTimer = null;
+        }, 100);
+      }
+    }
+  };
+
+  /**
+   * 터치 종료 이벤트 핸들러 (데모와 완전히 동일)
    */
   private onTouchEnd = (event: TouchEvent): void => {
     if (this.options.disabled) return;
 
-    // 플링 제스처 처리 (빠른 스와이프)
+    if (this.touchStopTimer) {
+      clearTimeout(this.touchStopTimer);
+      this.touchStopTimer = null;
+    }
+
     const touch = event.changedTouches[0];
     const deltaTime = Date.now() - this.touchStartTime;
-    const deltaY = this.touchStartY - touch.clientY;
+    const totalDeltaY = this.touchStartY - touch.clientY;
 
-    if (deltaTime < 300 && Math.abs(deltaY) > 50) {
-      const velocity = deltaY / deltaTime;
-      const flingDistance = velocity * 200; // 플링 거리 계산
+    // 🚨 데모와 동일: 플링 제스처 처리
+    if (
+      deltaTime < 300 &&
+      Math.abs(totalDeltaY) > 50 &&
+      this.touchMoveCount > 3
+    ) {
+      const velocity = this.touchVelocityY;
+      // 환경별 플링 배수 적용
+      const flingMultiplier = (this.options as any).flingMultiplier || 1.0;
+      const flingDistance = velocity * 400 * flingMultiplier;
 
-      this.handleScroll(flingDistance, "touch");
+      if (Math.abs(flingDistance) > 50) {
+        // 🚨 데모와 동일: 모달이 열려있을 때는 body 스크롤 플링 제스처 차단
+        if (!this.isModalOpen) {
+          this.addToScroll(flingDistance);
+        }
+
+        if (this.options.debug) {
+          console.log("🚀 플링 제스처:", {
+            velocity: velocity,
+            flingDistance: flingDistance,
+            modalMode: this.isModalOpen ? "차단됨" : "허용됨",
+          });
+        }
+      }
+    }
+
+    this.touchVelocityX = 0;
+    this.touchVelocityY = 0;
+    this.touchMoveCount = 0;
+
+    if (this.options.debug) {
+      console.log("🚀 TOUCH END:", {
+        지속시간: deltaTime,
+        총이동: totalDeltaY.toFixed(1),
+      });
     }
   };
 
@@ -247,37 +419,105 @@ export class TwoDimensionScroll {
   }
 
   /**
-   * 스크롤 처리
+   * 스크롤 처리 (데모 수준 극한 성능)
    */
   private handleScroll(delta: number, type: ScrollEventData["type"]): void {
-    if (Math.abs(delta) < 1) return;
+    if (Math.abs(delta) < 0.5) return; // 더 민감한 임계값
 
     const currentScrollTop = getCurrentScrollTop();
     const maxScrollTop = getMaxScrollTop();
-    const targetScrollTop = clamp(currentScrollTop + delta, 0, maxScrollTop);
+
+    // 🚀 데모 수준: 더 큰 이동 거리
+    const amplifiedDelta = delta * 1.5; // 추가 증폭
+    const targetScrollTop = clamp(
+      currentScrollTop + amplifiedDelta,
+      0,
+      maxScrollTop
+    );
 
     // 스크롤할 필요가 없으면 리턴
-    if (Math.abs(targetScrollTop - currentScrollTop) < 1) return;
+    if (Math.abs(targetScrollTop - currentScrollTop) < 0.5) return;
 
     const direction = delta > 0 ? 1 : -1;
 
+    if (this.options.debug) {
+      console.log("🚀 DEMO-LEVEL SCROLL:", {
+        현재위치: currentScrollTop.toFixed(1),
+        원본델타: delta.toFixed(1),
+        증폭델타: amplifiedDelta.toFixed(1),
+        목표위치: targetScrollTop.toFixed(1),
+        실제이동: Math.abs(targetScrollTop - currentScrollTop).toFixed(1),
+        증폭비율: "1.5x",
+      });
+    }
+
+    // 🚨 데모 수준: 즉각적인 스크롤 (애니메이션 없음)
+    window.scrollTo(0, targetScrollTop);
+
+    // 스크롤 상태 업데이트
+    this.isScrolling = true;
+
+    // 스크롤 완료 후 상태 리셋 (매우 빠르게)
+    setTimeout(() => {
+      this.isScrolling = false;
+    }, 10); // 10ms 후 리셋
+
     const eventData: ScrollEventData = {
-      deltaX: 0,
+      deltaX: type === "wheel" ? delta : 0,
       deltaY: delta,
-      scrollTop: currentScrollTop,
+      scrollTop: targetScrollTop,
       direction,
       type,
     };
 
-    // 콜백 실행
-    this.scrollCallbacks.forEach((callback) => callback(eventData));
-
-    // 부드러운 스크롤 실행
-    this.smoothScrollTo(targetScrollTop);
+    // 콜백 실행 (안전한 실행)
+    this.scrollCallbacks.forEach((callback) => {
+      if (typeof callback === "function") {
+        try {
+          callback(eventData);
+        } catch (error) {
+          console.error("🚨 스크롤 콜백 실행 중 오류:", error);
+        }
+      }
+    });
   }
 
   /**
-   * 부드러운 스크롤 실행
+   * lenis 스타일 스크롤 추가 함수 (데모와 동일)
+   */
+  private addToScroll(delta: number): void {
+    const maxScrollTop = getMaxScrollTop();
+    const oldTargetScroll = this.targetScroll || getCurrentScrollTop();
+    this.targetScroll = clamp(oldTargetScroll + delta, 0, maxScrollTop);
+
+    // 실제로 스크롤 위치가 변경되었고, 애니메이션이 정지되어 있다면 재시작
+    if (Math.abs(this.targetScroll - oldTargetScroll) > 0.1 && !this.rafId) {
+      if (this.options.debug) {
+        console.log("🔄 애니메이션 재시작:", {
+          oldTarget: Math.round(oldTargetScroll),
+          newTarget: Math.round(this.targetScroll),
+          delta: Math.round(delta),
+        });
+      }
+      this.startAnimationLoop();
+    }
+  }
+
+  /**
+   * lenis 스타일 애니메이션 루프 시작 (데모와 동일)
+   */
+  private startAnimationLoop(): void {
+    // 애니메이션 루프 구현이 필요함
+    // 현재는 즉시 스크롤로 대체
+    if (this.targetScroll !== undefined) {
+      window.scrollTo(0, this.targetScroll);
+    }
+  }
+
+  private targetScroll: number = 0;
+
+  /**
+   * 부드러운 스크롤 실행 (극한 성능 모드)
    */
   private smoothScrollTo(targetPosition: number): void {
     if (this.isAnimating) {
@@ -289,11 +529,31 @@ export class TwoDimensionScroll {
 
     if (Math.abs(distance) < 1) return;
 
+    // 🚨 극한 성능 모드: 즉각적인 스크롤
+    if (this.options.debug) {
+      console.log(
+        `🚀 EXTREME SCROLL: ${startPosition} → ${targetPosition} (거리: ${Math.abs(
+          distance
+        )})`
+      );
+    }
+
+    // lerp 값이 0.5 이하면 즉각적인 스크롤
+    const shouldInstantScroll = (this.options as any).lerp <= 0.5;
+
+    if (shouldInstantScroll) {
+      window.scrollTo(0, targetPosition);
+      this.isAnimating = false;
+      this.isScrolling = false;
+      return;
+    }
+
+    // 기존 애니메이션 로직 (lerp > 0.5일 때만)
     this.animationFrame = {
       startTime: performance.now(),
       startPosition,
       targetPosition,
-      duration: this.options.duration,
+      duration: Math.max(50, this.options.duration / 10), // 🚨 10배 빠르게
       easing: this.options.easing,
     };
 

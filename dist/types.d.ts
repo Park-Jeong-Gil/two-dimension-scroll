@@ -1,15 +1,38 @@
 /**
- * 스크롤 라이브러리 옵션 인터페이스
+ * 환경별 스크롤 옵션
  */
-export interface TwoDimensionScrollOptions {
+export interface EnvironmentScrollOptions {
     /** 스무스 스크롤 지속 시간 (밀리초) */
     duration?: number;
+    /** 가로 스크롤 감도 */
+    horizontalSensitivity?: number;
+    /** 세로 스크롤 감도 */
+    verticalSensitivity?: number;
+    /** 러프 값 (애니메이션 부드러움) */
+    lerp?: number;
+    /** 휠 배율 */
+    wheelMultiplier?: number;
+    /** 터치 배율 */
+    touchMultiplier?: number;
+    /** 정밀 모드 */
+    precisionMode?: boolean;
+    /** 바운스 효과 */
+    bounceEffect?: boolean;
+    /** 플링 배율 */
+    flingMultiplier?: number;
+    /** 키보드 스크롤 양 */
+    keyboardScrollAmount?: number;
+    /** 터치 정지 임계값 */
+    touchStopThreshold?: number;
+    /** 하이브리드 모드 */
+    hybridMode?: boolean;
+}
+/**
+ * 스크롤 라이브러리 옵션 인터페이스
+ */
+export interface TwoDimensionScrollOptions extends EnvironmentScrollOptions {
     /** 이징 함수 */
     easing?: (t: number) => number;
-    /** 가로 스크롤 감도 (기본값: 1) */
-    horizontalSensitivity?: number;
-    /** 세로 스크롤 감도 (기본값: 1) */
-    verticalSensitivity?: number;
     /** 스크롤 비활성화 여부 */
     disabled?: boolean;
     /** 모바일에서 네이티브 스크롤 사용 여부 */
@@ -18,6 +41,12 @@ export interface TwoDimensionScrollOptions {
     scrollableSelector?: string;
     /** 디버그 모드 */
     debug?: boolean;
+    /** 데스크톱 환경 전용 옵션 */
+    desktop?: EnvironmentScrollOptions;
+    /** 모바일 환경 전용 옵션 */
+    mobile?: EnvironmentScrollOptions;
+    /** 태블릿 환경 전용 옵션 */
+    tablet?: EnvironmentScrollOptions;
 }
 /**
  * 스크롤 이벤트 데이터

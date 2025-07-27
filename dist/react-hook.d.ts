@@ -2,192 +2,104 @@
 
 import { DependencyList } from "react";
 
-// TwoDimensionScroll 클래스 타입 (any 생성자 허용)
-export type TwoDimensionScrollClass = new (
-  options?: TwoDimensionScrollOptions
-) => TwoDimensionScrollInstance;
-
-// Hook 설정 타입 (유연한 클래스 타입 허용)
-export interface TwoDimensionScrollHookConfig {
-  ScrollClass?: any; // 유연하게 any 타입의 생성자 함수 허용
-  deps?: DependencyList;
+// UI/UX 옵션 인터페이스
+export interface UIOptions {
+  hideScrollbar?: boolean; // 스크롤바 숨김 (기본값: true)
+  showScrollProgress?: boolean; // 스크롤 진행률 표시 (기본값: false)
+  customScrollbarStyle?: boolean; // 커스텀 스크롤바 스타일 (기본값: false)
 }
 
-// 기본 TwoDimensionScroll 타입들
-export interface TwoDimensionScrollOptions {
+// 환경별 스크롤 옵션
+export interface EnvironmentScrollOptions {
   duration?: number;
   horizontalSensitivity?: number;
   verticalSensitivity?: number;
-  disabled?: boolean;
-  debug?: boolean;
-  desktop?: {
-    duration?: number;
-    easing?: (t: number) => number;
-    horizontalSensitivity?: number;
-    verticalSensitivity?: number;
-    lerp?: number;
-    wheelMultiplier?: number;
-    touchMultiplier?: number;
-    smoothWheel?: boolean;
-    touchStopThreshold?: number;
-    keyboardScrollAmount?: number;
-    precisionMode?: boolean;
-    keyboardScrollSpeed?: number;
-    skipInertia?: boolean;
-  };
-  mobile?: {
-    duration?: number;
-    easing?: (t: number) => number;
-    horizontalSensitivity?: number;
-    verticalSensitivity?: number;
-    lerp?: number;
-    wheelMultiplier?: number;
-    touchMultiplier?: number;
-    smoothWheel?: boolean;
-    touchStopThreshold?: number;
-    flingMultiplier?: number;
-    bounceEffect?: boolean;
-    fastScrollThreshold?: number;
-    touchScrollSpeed?: number;
-    skipInertia?: boolean;
-  };
-  tablet?: {
-    duration?: number;
-    easing?: (t: number) => number;
-    horizontalSensitivity?: number;
-    verticalSensitivity?: number;
-    lerp?: number;
-    wheelMultiplier?: number;
-    touchMultiplier?: number;
-    smoothWheel?: boolean;
-    touchStopThreshold?: number;
-    hybridMode?: boolean;
-    adaptiveSpeed?: boolean;
-    skipInertia?: boolean;
-  };
-  accessibility?: {
-    reducedMotion?: boolean;
-    screenReader?: boolean;
-    keyboardNavigation?: boolean;
-  };
-  ui?: {
-    hideScrollbar?: boolean;
-    showScrollProgress?: boolean;
-    customScrollbarStyle?: string;
-  };
+  lerp?: number;
+  wheelMultiplier?: number;
+  touchMultiplier?: number;
+  precisionMode?: boolean;
+  keyboardScrollAmount?: number;
+  bounceEffect?: boolean;
+  flingMultiplier?: number;
+  touchStopThreshold?: number;
+  hybridMode?: boolean;
 }
 
+// 메인 옵션 인터페이스
+export interface TwoDimensionScrollOptions extends EnvironmentScrollOptions {
+  disabled?: boolean;
+  debug?: boolean;
+  ui?: UIOptions; // 🚨 UI 옵션 추가
+  desktop?: EnvironmentScrollOptions;
+  mobile?: EnvironmentScrollOptions;
+  tablet?: EnvironmentScrollOptions;
+}
+
+// 스크롤 정보
 export interface ScrollInfo {
   position: number;
   maxPosition: number;
   progress: number;
-  isScrolling: boolean;
 }
 
-export interface ReactCompatibilityInfo {
-  isReactEnvironment: boolean;
-  isDestroyed: boolean;
-  eventListenerCount: number;
-  hasReactRouter: boolean;
-  stateObserverActive: boolean;
+// 스크롤 이벤트 데이터
+export interface ScrollEventData {
+  deltaX: number;
+  deltaY: number;
+  scrollTop: number;
+  direction: number;
+  type: string;
 }
 
+// 스크롤바 가시성 정보
+export interface ScrollbarVisibility {
+  visible: boolean;
+  hideScrollbar: boolean;
+}
+
+// TwoDimensionScroll 인스턴스 타입
 export interface TwoDimensionScrollInstance {
-  // 핵심 스크롤 메서드
-  scrollTo: (position: number, duration?: number) => void;
-  on: (callback: (data: any) => void) => void;
-  off: (callback: (data: any) => void) => void;
+  scrollTo(position: number, options?: { immediate?: boolean }): void;
+  on(callback: (data: ScrollEventData) => void): void;
+  off(callback: (data: ScrollEventData) => void): void;
+  disable(): void;
+  enable(): void;
+  getCurrentPosition(): number;
+  getMaxPosition(): number;
+  destroy(): void;
+  cleanup(): () => void;
 
-  // 모달 관련
-  pauseForModal: () => void;
-  resumeFromModal: () => void;
-  isInModalMode: () => boolean;
+  // 🚨 스크롤바 제어 메서드들 추가
+  showScrollbar(show: boolean): void;
+  toggleScrollbar(): void;
+  getScrollbarVisibility(): ScrollbarVisibility;
+  isScrollbarVisible(): boolean;
 
-  // 옵션 및 상태 관리
-  updateOptions: (options: Partial<TwoDimensionScrollOptions>) => void;
-  disable: () => void;
-  enable: () => void;
-
-  // 위치 정보
-  getCurrentPosition: () => number;
-  getMaxPosition: () => number;
-
-  // 환경 관리
-  getEnvironmentInfo: () => any;
-  updateEnvironmentOptions: (environment: string, options: any) => void;
-  resetToDefaults: () => void;
-  applyPerformancePreset: (preset: string) => void;
-  optimizeForCurrentEnvironment: () => void;
-
-  // 접근성
-  getAccessibilityStatus: () => any;
-  updateAccessibilitySettings: (settings: any) => void;
-
-  // UI 관련
-  toggleScrollbar: (show?: boolean) => void;
-  getScrollbarStatus: () => any;
-
-  // 생명주기
-  destroy: () => void;
-  cleanup: () => () => void;
-
-  // React 호환성
-  getReactCompatibilityInfo: () => ReactCompatibilityInfo;
-
-  // 속성
-  isScrolling?: boolean;
-  animatedScroll?: number;
-  targetScroll?: number;
-  options?: TwoDimensionScrollOptions;
+  // 🚨 모달 처리를 위한 속성/메서드 추가
+  isModalOpen?: boolean;
+  pauseForModal?: () => void;
+  resumeFromModal?: () => void;
+  isInModalMode?: () => boolean;
 }
 
+// Hook 반환 타입
 export interface TwoDimensionScrollHookReturn {
-  instance: TwoDimensionScrollInstance | null;
   isReady: boolean;
   scrollPosition: number;
-  scrollInfo: ScrollInfo | null;
-  scrollTo: (position: number, duration?: number) => void;
-  pauseForModal: () => void;
-  resumeFromModal: () => void;
-  disable: () => void;
-  enable: () => void;
-  updateOptions: (options: Partial<TwoDimensionScrollOptions>) => void;
-  getReactInfo: () => ReactCompatibilityInfo | null;
+  scrollInfo: ScrollInfo;
+  scrollTo: (position: number) => void;
+  instance: TwoDimensionScrollInstance | null;
 }
 
-export interface ScrollProgressData {
-  position: number;
-  progress: number;
-  percentage: number;
+// Hook 설정 타입
+export interface TwoDimensionScrollHookConfig {
+  // 추가 설정이 필요한 경우 여기에 추가
 }
 
-export interface ModalScrollHookReturn {
-  isModalOpen: boolean;
-  openModal: () => void;
-  closeModal: () => void;
-  toggleModal: () => void;
-}
-
-// React Hook 함수 (단일 시그니처, 유연한 config 타입)
+// 메인 Hook 함수
 export function useTwoDimensionScroll(
   options?: TwoDimensionScrollOptions,
-  config?: TwoDimensionScrollHookConfig | DependencyList
+  config?: TwoDimensionScrollHookConfig
 ): TwoDimensionScrollHookReturn;
 
-export function useScrollToTop(): (duration?: number) => void;
-
-export function useScrollProgress(
-  callback: (data: ScrollProgressData) => void,
-  throttle?: number
-): void;
-
-export function useModalScroll(): ModalScrollHookReturn;
-
-// 글로벌 타입 확장 (window.TwoDimensionScroll)
-declare global {
-  interface Window {
-    TwoDimensionScroll: new (
-      options?: TwoDimensionScrollOptions
-    ) => TwoDimensionScrollInstance;
-  }
-}
+export default useTwoDimensionScroll;

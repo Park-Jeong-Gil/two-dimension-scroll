@@ -427,14 +427,6 @@
     this.animatedScroll = this.targetScroll;
     this.isModalOpen = false; // 모달 상태 초기화
 
-    console.log("📦 TwoDimensionScroll 인스턴스 생성 (환경별 최적화):", {
-      environment: this.currentEnvironment,
-      isMobile: this.isMobileDevice,
-      isTablet: this.isTabletDevice,
-      isDesktop: this.isDesktopDevice,
-      options: this.options,
-    });
-
     this.init();
   }
 
@@ -899,17 +891,6 @@
     if (this.accessibilitySettings.keyboardUser)
       a11yFeatures.push("키보드네비게이션");
     if (this.accessibilitySettings.highContrast) a11yFeatures.push("고대비");
-
-    console.log("✅ TwoDimensionScroll 초기화 완료 (접근성 강화):", {
-      environment: this.currentEnvironment,
-      features: envFeatures.length > 0 ? envFeatures.join(", ") : "기본",
-      accessibility: a11yFeatures.length > 0 ? a11yFeatures.join(", ") : "표준",
-      lerp: this.options.lerp,
-      sensitivity: {
-        horizontal: this.options.horizontalSensitivity,
-        vertical: this.options.verticalSensitivity,
-      },
-    });
   };
 
   TwoDimensionScroll.prototype.disableDefaultScroll = function () {
@@ -991,13 +972,6 @@
     document.head.appendChild(style);
     this.styleElement = style;
 
-    if (this.options.debug) {
-      console.log("🎨 스크롤바 설정:", {
-        hideScrollbar: this.options.ui?.hideScrollbar !== false,
-        customStyle: this.options.ui?.customScrollbarStyle || false,
-      });
-    }
-
     // 모달 친화적인 스크롤 차단 시스템
     var self = this;
     this.preventScroll = function (e) {
@@ -1009,9 +983,6 @@
         typeof e.isPropagationStopped === "function" &&
         e.isPropagationStopped()
       ) {
-        if (self.options.debug) {
-          console.log("🔄 React 합성 이벤트 전파 중단됨 - preventScroll 스킵");
-        }
         return;
       }
 
@@ -1047,15 +1018,6 @@
           checkElement = checkElement.parentElement;
         }
 
-        if (self.options.debug) {
-          console.log("🎭 수동 모달 모드 처리:", {
-            targetElement:
-              target.tagName + (target.className ? "." + target.className : ""),
-            isInModal: isInModal,
-            action: isInModal ? "허용" : "차단",
-          });
-        }
-
         if (isInModal) {
           return; // 모달 내부 스크롤 허용
         } else {
@@ -1067,15 +1029,6 @@
       // 일반 모드에서의 모달 내부 스크롤 감지 (React 환경 최적화)
       var target = e.target;
       var element = target;
-
-      if (self.options.debug) {
-        console.log("🔍 스크롤 이벤트 분석:", {
-          eventType: e.type,
-          target:
-            target.tagName + (target.className ? "." + target.className : ""),
-          modalMode: self.isModalOpen ? "수동활성" : "비활성",
-        });
-      }
 
       // 부모 요소들을 순회하면서 모달 관련 요소 확인
       var modalElement = null;
@@ -1089,15 +1042,6 @@
         var classList = element.classList || [];
         var role = element.getAttribute("role") || "";
         var ariaModal = element.getAttribute("aria-modal");
-
-        if (self.options.debug) {
-          console.log("🔎 요소 검사:", {
-            tag: tagName,
-            classes: Array.from(classList).join(" "),
-            role: role,
-            ariaModal: ariaModal,
-          });
-        }
 
         // 모달 관련 요소 감지 (React 환경 포함한 포괄적 조건들)
         var isModal =
@@ -1136,21 +1080,8 @@
 
       // 모달 내부에서 발생한 스크롤인 경우
       if (modalElement) {
-        if (self.options.debug) {
-          console.log("🎭 모달 감지됨:", {
-            modalElement: modalElement.tagName,
-            modalClasses: Array.from(modalElement.classList).join(" "),
-            targetElement: target.tagName,
-            targetClasses: target.className,
-            isModalOpen: self.isModalOpen,
-          });
-        }
-
         // 수동 모달 모드이고 모달 내부가 아닌 경우 차단
         if (self.isModalOpen) {
-          if (self.options.debug) {
-            console.log("✅ 수동 모달 모드 - 모달 내부 스크롤 허용");
-          }
           return; // 수동 모달 모드에서는 모달 내부 모든 스크롤 허용
         }
 
@@ -1184,14 +1115,6 @@
             }
 
             if (shouldBlockOverscroll) {
-              if (self.options.debug) {
-                console.log("🚫 모달 휠 오버스크롤 차단:", {
-                  direction: isScrollingUp ? "위로" : "아래로",
-                  scrollTop: scrollTop,
-                  maxScrollTop: maxScrollTop,
-                  reason: isScrollingUp ? "맨_위_도달" : "맨_아래_도달",
-                });
-              }
               e.preventDefault();
               return;
             }
@@ -1203,14 +1126,6 @@
 
             // 정확히 끝에 도달했을 때만 차단 (여유값 제거)
             if ((isAtTop || isAtBottom) && maxScrollTop > 0) {
-              if (self.options.debug) {
-                console.log("🚫 모달 터치 오버스크롤 차단 (정확한 끝):", {
-                  scrollTop: scrollTop,
-                  maxScrollTop: maxScrollTop,
-                  isAtTop: isAtTop,
-                  isAtBottom: isAtBottom,
-                });
-              }
               // 모바일에서는 더 관대하게 - preventDefault 하지 않고 CSS에 의존
               // e.preventDefault();
               // return;
@@ -1218,27 +1133,7 @@
           }
         }
 
-        if (self.options.debug) {
-          console.log("✅ 모달 내부 스크롤 허용:", {
-            modalElement: modalElement.tagName,
-            scrollableElement: scrollableElement
-              ? scrollableElement.tagName
-              : "none",
-            classes: Array.from(modalElement.classList).join(" "),
-            modalMode: self.isModalOpen ? "수동활성" : "자동감지",
-          });
-        }
         return; // 모달 내부에서는 기본 스크롤 허용 (오버스크롤 제외)
-      }
-
-      // 모달이 아닌 경우 body 스크롤 차단
-      if (self.options.debug) {
-        console.log("❌ Body 스크롤 차단:", {
-          target:
-            target.tagName + (target.className ? "." + target.className : ""),
-          modalMode: self.isModalOpen ? "수동활성" : "비활성",
-          reason: self.isModalOpen ? "수동_모달_모드_외부" : "일반_body_스크롤",
-        });
       }
 
       e.preventDefault();
@@ -1264,15 +1159,6 @@
         var classList = element.classList || [];
         for (var i = 0; i < reactScrollContainers.length; i++) {
           if (classList.contains(reactScrollContainers[i])) {
-            if (self.options.debug) {
-              console.log("🎯 React 스크롤 컨테이너 발견:", {
-                className: reactScrollContainers[i],
-                tagName: element.tagName,
-                scrollHeight: element.scrollHeight,
-                clientHeight: element.clientHeight,
-              });
-            }
-
             // 실제로 스크롤 가능한지 확인
             if (element.scrollHeight > element.clientHeight) {
               var computedStyle = window.getComputedStyle(element);
@@ -1295,14 +1181,6 @@
           var overflowY = computedStyle.overflowY;
 
           if (overflowY === "auto" || overflowY === "scroll") {
-            if (self.options.debug) {
-              console.log("📜 일반 스크롤 요소 발견:", {
-                tagName: element.tagName,
-                overflowY: overflowY,
-                scrollHeight: element.scrollHeight,
-                clientHeight: element.clientHeight,
-              });
-            }
             return element;
           }
         }
@@ -1318,19 +1196,10 @@
         var modalOverflowY = modalStyle.overflowY;
 
         if (modalOverflowY === "auto" || modalOverflowY === "scroll") {
-          if (self.options.debug) {
-            console.log("🎭 모달 자체 스크롤 가능:", {
-              tagName: modalElement.tagName,
-              overflowY: modalOverflowY,
-            });
-          }
           return modalElement;
         }
       }
 
-      if (self.options.debug) {
-        console.log("❌ 스크롤 가능한 요소를 찾을 수 없음");
-      }
       return null;
     };
 
@@ -1454,13 +1323,6 @@
         self.isScrolling = false;
         self.rafId = null; // rafId 정리
 
-        if (self.options.debug) {
-          console.log("⏹️ 애니메이션 정지:", {
-            finalPosition: Math.round(self.animatedScroll),
-            difference: Math.round(difference * 100) / 100,
-          });
-        }
-
         // 애니메이션 루프 종료
         return;
       }
@@ -1492,15 +1354,6 @@
           }
         } else {
           self.isScrolling = false;
-        }
-
-        if (self.options.debug && difference > 0.1) {
-          console.log("🎯 lenis 스크롤:", {
-            targetScroll: Math.round(self.targetScroll),
-            animatedScroll: Math.round(self.animatedScroll),
-            difference: Math.round(difference * 100) / 100,
-            positionChange: Math.round(positionChange * 100) / 100,
-          });
         }
       }
 
@@ -1601,13 +1454,6 @@
     if (this.touchStopTimer) {
       clearTimeout(this.touchStopTimer);
       this.touchStopTimer = null;
-    }
-
-    if (this.options.debug) {
-      console.log("👆 터치 시작:", {
-        x: touch.clientX,
-        y: touch.clientY,
-      });
     }
   };
 
