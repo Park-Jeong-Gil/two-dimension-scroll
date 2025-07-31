@@ -68,7 +68,7 @@ export declare class TwoDimensionScroll {
      */
     private onResize;
     /**
-     * 가로와 세로 델타를 조합하여 최종 델타 계산 (스마트 방향 전환 지원)
+     * 가로와 세로 델타를 조합하여 최종 델타 계산 (각도 기반 우선)
      */
     private calculateCombinedDelta;
     /**

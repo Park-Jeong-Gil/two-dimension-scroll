@@ -429,14 +429,11 @@ export class TwoDimensionScroll {
   };
 
   /**
-   * 가로와 세로 델타를 조합하여 최종 델타 계산 (스마트 방향 전환 지원)
+   * 가로와 세로 델타를 조합하여 최종 델타 계산 (각도 기반 우선)
    */
   private calculateCombinedDelta(deltaX: number, deltaY: number): number {
-    // 🆕 각도 기반 방향 결정 (prioritizeVertical과 함께 사용)
-    if (
-      (this.options as any).useAngleBasedDirection &&
-      (this.options as any).prioritizeVertical
-    ) {
+    // 🆕 각도 기반 방향 결정 (최우선 처리)
+    if ((this.options as any).useAngleBasedDirection) {
       const horizontalThreshold =
         (this.options as any).horizontalAngleThreshold || 20; // 기본값: 20도
 
@@ -445,7 +442,7 @@ export class TwoDimensionScroll {
         Math.atan2(Math.abs(deltaY), Math.abs(deltaX)) * (180 / Math.PI);
 
       if (this.options.debug) {
-        console.log("📐 각도 기반 방향 결정:", {
+        console.log("📐 각도 기반 방향 결정 (최우선):", {
           deltaX: deltaX.toFixed(1),
           deltaY: deltaY.toFixed(1),
           각도: angle.toFixed(1) + "°",
@@ -458,7 +455,7 @@ export class TwoDimensionScroll {
       return angle <= horizontalThreshold ? deltaX : deltaY;
     }
 
-    // 🆕 터치 방향 고정 모드 적용
+    // 🆕 터치 방향 고정 모드 적용 (각도 기반이 비활성화된 경우에만)
     if ((this.options as any).lockTouchDirection) {
       const threshold = (this.options as any).touchDirectionThreshold || 15;
       const allowDirectionChange =
@@ -478,16 +475,8 @@ export class TwoDimensionScroll {
         !this.touchDirectionLocked &&
         (Math.abs(deltaX) > threshold || Math.abs(deltaY) > threshold)
       ) {
-        // 🆕 각도 기반 방향 결정 적용
-        if ((this.options as any).useAngleBasedDirection) {
-          const horizontalThreshold =
-            (this.options as any).horizontalAngleThreshold || 20;
-          const angle =
-            Math.atan2(Math.abs(deltaY), Math.abs(deltaX)) * (180 / Math.PI);
-          this.touchDirection =
-            angle <= horizontalThreshold ? "horizontal" : "vertical";
-        } else if ((this.options as any).prioritizeVertical) {
-          // 기존 Y축 우선 로직
+        // Y축 우선 모드 적용
+        if ((this.options as any).prioritizeVertical) {
           this.touchDirection =
             Math.abs(deltaY) > 5 ? "vertical" : "horizontal";
         } else {
@@ -588,7 +577,7 @@ export class TwoDimensionScroll {
       }
     }
 
-    // 🆕 Y축 우선 모드 적용 (방향 고정이 비활성화된 경우)
+    // 🆕 Y축 우선 모드 적용 (다른 모드가 모두 비활성화된 경우)
     if ((this.options as any).prioritizeVertical) {
       // Y축 우선: Y값이 0이 아니면 무조건 Y축, 0이면 X축
       return deltaY !== 0 ? deltaY : deltaX;
