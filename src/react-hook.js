@@ -194,7 +194,7 @@ function createTwoDimensionScrollClass() {
         directionChangeThreshold: 30, // 🆕 방향 전환 임계값 (모바일: 30px)
         directionChangeSmoothness: 0.4, // 🆕 방향 전환 스무딩 (모바일: 0.4)
         useAngleBasedDirection: true, // 🆕 각도 기반 방향 결정 (기본값: true)
-        horizontalAngleThreshold: 10, // 🆕 가로 스크롤 인식 각도 (모바일: 10도, 매우 엄격)
+        horizontalAngleThreshold: 5, // 🆕 가로 스크롤 인식 각도 (모바일: 5도, 극도로 엄격)
       },
       tablet: {
         duration: 900,
@@ -971,8 +971,15 @@ function createTwoDimensionScrollClass() {
         });
       }
 
-      // 각도가 임계값 이하면 가로 스크롤, 이상이면 세로 스크롤
-      return angle <= horizontalThreshold ? deltaX : deltaY;
+      // 🚀 개선된 로직: 방향에 따라 순수한 축 값만 반환
+      if (angle <= horizontalThreshold) {
+        // 가로 스크롤: X축만 사용, Y축 완전 무시
+        return deltaX;
+      } else {
+        // 세로 스크롤: Y축만 사용, X축 완전 무시
+        // 🎯 핵심 개선: X축 성분을 완전히 제거하여 흔들림 방지
+        return deltaY;
+      }
     }
 
     // 🆕 터치 방향 고정 모드 적용 (각도 기반이 비활성화된 경우에만)
