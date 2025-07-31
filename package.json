@@ -1,6 +1,6 @@
 {
   "name": "two-dimension-scroll",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "type": "module",
   "description": "A smooth scroll library that detects both horizontal and vertical scroll and converts them to vertical smooth scrolling",
   "main": "dist/index.js",
