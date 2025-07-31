@@ -26,6 +26,9 @@ export interface EnvironmentScrollOptions {
   prioritizeVertical?: boolean; // 🆕 Y축 우선 모드
   lockTouchDirection?: boolean; // 🆕 터치 방향 고정 모드
   touchDirectionThreshold?: number; // 🆕 터치 방향 결정 임계값
+  allowDirectionChange?: boolean; // 🆕 터치 방향 전환 허용
+  directionChangeThreshold?: number; // 🆕 방향 전환 임계값
+  directionChangeSmoothness?: number; // 🆕 방향 전환 스무딩 강도
 }
 
 // 메인 옵션 인터페이스

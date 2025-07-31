@@ -32,6 +32,12 @@ export interface EnvironmentScrollOptions {
   lockTouchDirection?: boolean;
   /** 터치 방향 결정을 위한 최소 이동 거리 */
   touchDirectionThreshold?: number;
+  /** 터치 방향 전환 허용 (고정된 방향에서 반대 방향으로 전환 가능) */
+  allowDirectionChange?: boolean;
+  /** 방향 전환을 위한 최소 이동 거리 */
+  directionChangeThreshold?: number;
+  /** 방향 전환 시 델타 스무딩 강도 (0-1) */
+  directionChangeSmoothness?: number;
 }
 
 /**

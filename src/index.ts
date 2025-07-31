@@ -63,6 +63,14 @@ export class TwoDimensionScroll {
   private touchStartDeltaX: number = 0;
   private touchStartDeltaY: number = 0;
 
+  // 🆕 방향 전환 감지를 위한 속성들
+  private oppositeDirectionCount: number = 0;
+  private lastDeltaX: number = 0;
+  private lastDeltaY: number = 0;
+  private smoothedDeltaX: number = 0;
+  private smoothedDeltaY: number = 0;
+  private directionChangeStartTime: number = 0;
+
   // 🚨 모달 관련 속성 추가
   private isModalOpen: boolean = false;
 
@@ -226,6 +234,14 @@ export class TwoDimensionScroll {
     this.touchDirectionLocked = false;
     this.touchStartDeltaX = 0;
     this.touchStartDeltaY = 0;
+
+    // 🆕 방향 전환 감지 초기화
+    this.oppositeDirectionCount = 0;
+    this.lastDeltaX = 0;
+    this.lastDeltaY = 0;
+    this.smoothedDeltaX = 0;
+    this.smoothedDeltaY = 0;
+    this.directionChangeStartTime = 0;
 
     if (this.touchStopTimer) {
       clearTimeout(this.touchStopTimer);
@@ -413,12 +429,23 @@ export class TwoDimensionScroll {
   };
 
   /**
-   * 가로와 세로 델타를 조합하여 최종 델타 계산
+   * 가로와 세로 델타를 조합하여 최종 델타 계산 (스마트 방향 전환 지원)
    */
   private calculateCombinedDelta(deltaX: number, deltaY: number): number {
     // 🆕 터치 방향 고정 모드 적용
     if ((this.options as any).lockTouchDirection) {
       const threshold = (this.options as any).touchDirectionThreshold || 15;
+      const allowDirectionChange =
+        (this.options as any).allowDirectionChange !== false; // 기본값: true
+      const changeThreshold =
+        (this.options as any).directionChangeThreshold || 25;
+      const smoothness = (this.options as any).directionChangeSmoothness || 0.3;
+
+      // 델타 스무딩 적용
+      this.smoothedDeltaX =
+        this.smoothedDeltaX * (1 - smoothness) + deltaX * smoothness;
+      this.smoothedDeltaY =
+        this.smoothedDeltaY * (1 - smoothness) + deltaY * smoothness;
 
       // 방향이 아직 결정되지 않았고, 충분한 이동이 있는 경우
       if (
@@ -435,6 +462,7 @@ export class TwoDimensionScroll {
             Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
         }
         this.touchDirectionLocked = true;
+        this.oppositeDirectionCount = 0;
 
         if (this.options.debug) {
           console.log("🔒 터치 방향 고정:", {
@@ -446,7 +474,81 @@ export class TwoDimensionScroll {
         }
       }
 
-      // 방향이 고정된 경우 해당 방향의 델타만 사용
+      // 방향이 고정된 경우
+      if (this.touchDirectionLocked && allowDirectionChange) {
+        // 🆕 스마트 방향 전환 감지
+        const isHorizontalLocked = this.touchDirection === "horizontal";
+        const currentPrimaryDelta = isHorizontalLocked ? deltaX : deltaY;
+        const currentSecondaryDelta = isHorizontalLocked ? deltaY : deltaX;
+
+        // 반대 방향으로의 강한 움직임 감지
+        if (
+          Math.abs(currentSecondaryDelta) > Math.abs(currentPrimaryDelta) &&
+          Math.abs(currentSecondaryDelta) > changeThreshold
+        ) {
+          this.oppositeDirectionCount++;
+
+          if (this.oppositeDirectionCount === 1) {
+            this.directionChangeStartTime = Date.now();
+          }
+
+          // 일정 횟수 이상 반대 방향으로 움직이면 방향 전환
+          if (this.oppositeDirectionCount >= 3) {
+            this.touchDirection = isHorizontalLocked
+              ? "vertical"
+              : "horizontal";
+            this.oppositeDirectionCount = 0;
+
+            if (this.options.debug) {
+              console.log("🔄 터치 방향 전환:", {
+                새방향: this.touchDirection,
+                전환시간: Date.now() - this.directionChangeStartTime + "ms",
+                primaryDelta: currentPrimaryDelta.toFixed(1),
+                secondaryDelta: currentSecondaryDelta.toFixed(1),
+              });
+            }
+          }
+        } else {
+          // 반대 방향 카운트 리셋 (점진적으로)
+          this.oppositeDirectionCount = Math.max(
+            0,
+            this.oppositeDirectionCount - 0.5
+          );
+        }
+
+        // 스무딩된 델타 사용하여 부드러운 전환
+        const finalDelta =
+          this.touchDirection === "horizontal"
+            ? this.smoothedDeltaX
+            : this.smoothedDeltaY;
+
+        // 이전 값과의 급격한 변화 방지
+        const maxChange = 50; // 최대 변화량 제한
+        if (this.lastDeltaX !== 0 || this.lastDeltaY !== 0) {
+          const lastFinalDelta =
+            this.touchDirection === "horizontal"
+              ? this.lastDeltaX
+              : this.lastDeltaY;
+          const deltaChange = Math.abs(finalDelta - lastFinalDelta);
+
+          if (deltaChange > maxChange) {
+            const clampedDelta =
+              lastFinalDelta +
+              Math.sign(finalDelta - lastFinalDelta) * maxChange;
+            this.lastDeltaX =
+              this.touchDirection === "horizontal" ? clampedDelta : deltaX;
+            this.lastDeltaY =
+              this.touchDirection === "vertical" ? clampedDelta : deltaY;
+            return clampedDelta;
+          }
+        }
+
+        this.lastDeltaX = deltaX;
+        this.lastDeltaY = deltaY;
+        return finalDelta;
+      }
+
+      // 방향이 고정된 경우 (방향 전환 비활성화)
       if (this.touchDirectionLocked) {
         return this.touchDirection === "horizontal" ? deltaX : deltaY;
       }

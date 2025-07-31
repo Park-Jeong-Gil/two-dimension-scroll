@@ -27,6 +27,12 @@ export declare class TwoDimensionScroll {
     private touchDirectionLocked;
     private touchStartDeltaX;
     private touchStartDeltaY;
+    private oppositeDirectionCount;
+    private lastDeltaX;
+    private lastDeltaY;
+    private smoothedDeltaX;
+    private smoothedDeltaY;
+    private directionChangeStartTime;
     private isModalOpen;
     constructor(options?: TwoDimensionScrollOptions);
     /**
@@ -62,7 +68,7 @@ export declare class TwoDimensionScroll {
      */
     private onResize;
     /**
-     * 가로와 세로 델타를 조합하여 최종 델타 계산
+     * 가로와 세로 델타를 조합하여 최종 델타 계산 (스마트 방향 전환 지원)
      */
     private calculateCombinedDelta;
     /**
