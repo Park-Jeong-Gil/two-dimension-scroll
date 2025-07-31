@@ -457,8 +457,8 @@ export class TwoDimensionScroll {
         return deltaX;
       } else {
         // 세로 스크롤: Y축만 사용, X축 완전 무시
-        // 🎯 핵심 개선: 절댓값을 사용하여 방향 일관성 보장
-        const magnitude = Math.abs(deltaY);
+        // 🎯 핵심 개선: 대각선 벡터의 전체 크기를 Y축으로 투영
+        const magnitude = Math.sqrt(deltaX * deltaX + deltaY * deltaY); // 벡터 전체 크기
 
         // 터치 시작 시 주요 방향 결정 (한 번만)
         if (!this.touchDirectionLocked) {
@@ -467,19 +467,21 @@ export class TwoDimensionScroll {
           this.touchDirectionLocked = true;
 
           if (this.options.debug) {
-            console.log("🎯 세로 스크롤 방향 고정:", {
+            console.log("🎯 대각선 벡터 → Y축 투영:", {
               방향: this.verticalScrollDirection,
-              초기deltaY: deltaY.toFixed(1),
-              크기: magnitude.toFixed(1),
+              deltaX: deltaX.toFixed(1),
+              deltaY: deltaY.toFixed(1),
+              벡터크기: magnitude.toFixed(1),
+              기존deltaY: deltaY.toFixed(1),
             });
           }
         }
 
-        // 고정된 방향에 따라 일관된 부호 적용
+        // 🚀 핵심: 벡터 전체 크기를 고정된 방향으로 적용
         if (this.verticalScrollDirection === "down") {
-          return magnitude; // 항상 양수 (아래로)
+          return magnitude; // 벡터 전체 크기를 아래 방향으로
         } else {
-          return -magnitude; // 항상 음수 (위로)
+          return -magnitude; // 벡터 전체 크기를 위 방향으로
         }
       }
     }
