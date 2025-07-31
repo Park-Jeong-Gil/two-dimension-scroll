@@ -965,7 +965,7 @@ function createTwoDimensionScrollClass() {
 
       // 🎯 prioritizeVertical이 활성화되면 가로 임계값을 극도로 엄격하게!
       if (this.options.prioritizeVertical) {
-        horizontalThreshold = 2; // 2도 이하만 가로로 인식 (거의 완전 수평만)
+        horizontalThreshold = 15; // 15도 이하만 가로로 인식 (적당히 엄격)
       }
 
       // 각도 계산 (라디안 -> 도)
