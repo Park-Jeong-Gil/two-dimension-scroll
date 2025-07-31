@@ -38,6 +38,10 @@ export interface EnvironmentScrollOptions {
     directionChangeThreshold?: number;
     /** 방향 전환 시 델타 스무딩 강도 (0-1) */
     directionChangeSmoothness?: number;
+    /** 각도 기반 방향 결정 사용 여부 */
+    useAngleBasedDirection?: boolean;
+    /** 가로 스크롤로 인식할 최대 각도 (도 단위, 기본값: 20) */
+    horizontalAngleThreshold?: number;
 }
 /**
  * 스크롤 라이브러리 옵션 인터페이스

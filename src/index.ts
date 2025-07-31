@@ -432,6 +432,32 @@ export class TwoDimensionScroll {
    * 가로와 세로 델타를 조합하여 최종 델타 계산 (스마트 방향 전환 지원)
    */
   private calculateCombinedDelta(deltaX: number, deltaY: number): number {
+    // 🆕 각도 기반 방향 결정 (prioritizeVertical과 함께 사용)
+    if (
+      (this.options as any).useAngleBasedDirection &&
+      (this.options as any).prioritizeVertical
+    ) {
+      const horizontalThreshold =
+        (this.options as any).horizontalAngleThreshold || 20; // 기본값: 20도
+
+      // 각도 계산 (라디안 -> 도)
+      const angle =
+        Math.atan2(Math.abs(deltaY), Math.abs(deltaX)) * (180 / Math.PI);
+
+      if (this.options.debug) {
+        console.log("📐 각도 기반 방향 결정:", {
+          deltaX: deltaX.toFixed(1),
+          deltaY: deltaY.toFixed(1),
+          각도: angle.toFixed(1) + "°",
+          임계각도: horizontalThreshold + "°",
+          결정방향: angle <= horizontalThreshold ? "가로" : "세로",
+        });
+      }
+
+      // 각도가 임계값 이하면 가로 스크롤, 이상이면 세로 스크롤
+      return angle <= horizontalThreshold ? deltaX : deltaY;
+    }
+
     // 🆕 터치 방향 고정 모드 적용
     if ((this.options as any).lockTouchDirection) {
       const threshold = (this.options as any).touchDirectionThreshold || 15;
@@ -452,8 +478,16 @@ export class TwoDimensionScroll {
         !this.touchDirectionLocked &&
         (Math.abs(deltaX) > threshold || Math.abs(deltaY) > threshold)
       ) {
-        // 방향 결정: Y축 우선 모드가 활성화된 경우
-        if ((this.options as any).prioritizeVertical) {
+        // 🆕 각도 기반 방향 결정 적용
+        if ((this.options as any).useAngleBasedDirection) {
+          const horizontalThreshold =
+            (this.options as any).horizontalAngleThreshold || 20;
+          const angle =
+            Math.atan2(Math.abs(deltaY), Math.abs(deltaX)) * (180 / Math.PI);
+          this.touchDirection =
+            angle <= horizontalThreshold ? "horizontal" : "vertical";
+        } else if ((this.options as any).prioritizeVertical) {
+          // 기존 Y축 우선 로직
           this.touchDirection =
             Math.abs(deltaY) > 5 ? "vertical" : "horizontal";
         } else {

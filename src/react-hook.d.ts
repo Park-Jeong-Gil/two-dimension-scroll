@@ -29,6 +29,8 @@ export interface EnvironmentScrollOptions {
   allowDirectionChange?: boolean; // 🆕 터치 방향 전환 허용
   directionChangeThreshold?: number; // 🆕 방향 전환 임계값
   directionChangeSmoothness?: number; // 🆕 방향 전환 스무딩 강도
+  useAngleBasedDirection?: boolean; // 🆕 각도 기반 방향 결정
+  horizontalAngleThreshold?: number; // �� 가로 스크롤 인식 각도
 }
 
 // 메인 옵션 인터페이스

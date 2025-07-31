@@ -175,6 +175,8 @@ function createTwoDimensionScrollClass() {
         allowDirectionChange: true, // 🆕 방향 전환 허용 (기본값: true)
         directionChangeThreshold: 25, // 🆕 방향 전환 임계값 (기본값: 25px)
         directionChangeSmoothness: 0.3, // 🆕 방향 전환 스무딩 (기본값: 0.3)
+        useAngleBasedDirection: true, // 🆕 각도 기반 방향 결정 (기본값: true)
+        horizontalAngleThreshold: 20, // 🆕 가로 스크롤 인식 각도 (기본값: 20도)
       },
       mobile: {
         duration: 800,
@@ -191,6 +193,8 @@ function createTwoDimensionScrollClass() {
         allowDirectionChange: true, // 🆕 방향 전환 허용 (기본값: true)
         directionChangeThreshold: 30, // 🆕 방향 전환 임계값 (모바일: 30px)
         directionChangeSmoothness: 0.4, // 🆕 방향 전환 스무딩 (모바일: 0.4)
+        useAngleBasedDirection: true, // 🆕 각도 기반 방향 결정 (기본값: true)
+        horizontalAngleThreshold: 15, // 🆕 가로 스크롤 인식 각도 (모바일: 15도, 더 엄격)
       },
       tablet: {
         duration: 900,
@@ -206,6 +210,8 @@ function createTwoDimensionScrollClass() {
         allowDirectionChange: true, // 🆕 방향 전환 허용 (기본값: true)
         directionChangeThreshold: 28, // 🆕 방향 전환 임계값 (태블릿: 28px)
         directionChangeSmoothness: 0.35, // 🆕 방향 전환 스무딩 (태블릿: 0.35)
+        useAngleBasedDirection: true, // 🆕 각도 기반 방향 결정 (기본값: true)
+        horizontalAngleThreshold: 18, // 🆕 가로 스크롤 인식 각도 (태블릿: 18도)
       },
     };
 
@@ -947,6 +953,31 @@ function createTwoDimensionScrollClass() {
     deltaX,
     deltaY
   ) {
+    // 🆕 각도 기반 방향 결정 (prioritizeVertical과 함께 사용)
+    if (
+      this.options.useAngleBasedDirection &&
+      this.options.prioritizeVertical
+    ) {
+      var horizontalThreshold = this.options.horizontalAngleThreshold || 20; // 기본값: 20도
+
+      // 각도 계산 (라디안 -> 도)
+      var angle =
+        Math.atan2(Math.abs(deltaY), Math.abs(deltaX)) * (180 / Math.PI);
+
+      if (this.options.debug) {
+        console.log("📐 각도 기반 방향 결정:", {
+          deltaX: deltaX.toFixed(1),
+          deltaY: deltaY.toFixed(1),
+          각도: angle.toFixed(1) + "°",
+          임계각도: horizontalThreshold + "°",
+          결정방향: angle <= horizontalThreshold ? "가로" : "세로",
+        });
+      }
+
+      // 각도가 임계값 이하면 가로 스크롤, 이상이면 세로 스크롤
+      return angle <= horizontalThreshold ? deltaX : deltaY;
+    }
+
     // 🆕 터치 방향 고정 모드 적용
     if (this.options.lockTouchDirection) {
       var threshold = this.options.touchDirectionThreshold || 15;
@@ -965,8 +996,15 @@ function createTwoDimensionScrollClass() {
         !this.touchDirectionLocked &&
         (Math.abs(deltaX) > threshold || Math.abs(deltaY) > threshold)
       ) {
-        // 방향 결정: Y축 우선 모드가 활성화된 경우
-        if (this.options.prioritizeVertical) {
+        // 🆕 각도 기반 방향 결정 적용
+        if (this.options.useAngleBasedDirection) {
+          var horizontalThreshold = this.options.horizontalAngleThreshold || 20;
+          var angle =
+            Math.atan2(Math.abs(deltaY), Math.abs(deltaX)) * (180 / Math.PI);
+          this.touchDirection =
+            angle <= horizontalThreshold ? "horizontal" : "vertical";
+        } else if (this.options.prioritizeVertical) {
+          // 기존 Y축 우선 로직
           this.touchDirection =
             Math.abs(deltaY) > 5 ? "vertical" : "horizontal";
         } else {
