@@ -28,6 +28,10 @@ export interface EnvironmentScrollOptions {
   hybridMode?: boolean;
   /** 대각선 스크롤 시 Y축 우선 모드 */
   prioritizeVertical?: boolean;
+  /** 터치 방향 고정 모드 (대각선 터치 시 방향 고정) */
+  lockTouchDirection?: boolean;
+  /** 터치 방향 결정을 위한 최소 이동 거리 */
+  touchDirectionThreshold?: number;
 }
 
 /**

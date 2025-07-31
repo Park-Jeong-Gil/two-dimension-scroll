@@ -170,6 +170,8 @@ function createTwoDimensionScrollClass() {
         precisionMode: true,
         keyboardScrollAmount: 0.8,
         prioritizeVertical: false, // 🆕 Y축 우선 모드 (기본값: false)
+        lockTouchDirection: true, // 🆕 터치 방향 고정 (기본값: true)
+        touchDirectionThreshold: 15, // 🆕 방향 결정 임계값 (기본값: 15px)
       },
       mobile: {
         duration: 800,
@@ -181,6 +183,8 @@ function createTwoDimensionScrollClass() {
         flingMultiplier: 1.2,
         touchStopThreshold: 4,
         prioritizeVertical: false, // 🆕 Y축 우선 모드 (기본값: false)
+        lockTouchDirection: true, // 🆕 터치 방향 고정 (기본값: true)
+        touchDirectionThreshold: 20, // 🆕 방향 결정 임계값 (모바일: 20px)
       },
       tablet: {
         duration: 900,
@@ -191,6 +195,8 @@ function createTwoDimensionScrollClass() {
         touchMultiplier: 2.2,
         hybridMode: true,
         prioritizeVertical: false, // 🆕 Y축 우선 모드 (기본값: false)
+        lockTouchDirection: true, // 🆕 터치 방향 고정 (기본값: true)
+        touchDirectionThreshold: 18, // 🆕 방향 결정 임계값 (태블릿: 18px)
       },
     };
 
@@ -218,6 +224,12 @@ function createTwoDimensionScrollClass() {
     this.touchMoveCount = 0;
     this.touchStopTimer = null;
     this.isModalOpen = false;
+
+    // 🆕 터치 방향 고정을 위한 속성들
+    this.touchDirection = null;
+    this.touchDirectionLocked = false;
+    this.touchStartDeltaX = 0;
+    this.touchStartDeltaY = 0;
 
     // 초기화
     this.passive = supportsPassive() ? { passive: false } : false;
@@ -780,6 +792,12 @@ function createTwoDimensionScrollClass() {
     this.touchVelocityY = 0;
     this.touchMoveCount = 0;
 
+    // 🆕 터치 방향 고정 초기화
+    this.touchDirection = null;
+    this.touchDirectionLocked = false;
+    this.touchStartDeltaX = 0;
+    this.touchStartDeltaY = 0;
+
     if (this.touchStopTimer) {
       clearTimeout(this.touchStopTimer);
       this.touchStopTimer = null;
@@ -904,7 +922,43 @@ function createTwoDimensionScrollClass() {
     deltaX,
     deltaY
   ) {
-    // 🆕 Y축 우선 모드 적용
+    // 🆕 터치 방향 고정 모드 적용
+    if (this.options.lockTouchDirection) {
+      var threshold = this.options.touchDirectionThreshold || 15;
+
+      // 방향이 아직 결정되지 않았고, 충분한 이동이 있는 경우
+      if (
+        !this.touchDirectionLocked &&
+        (Math.abs(deltaX) > threshold || Math.abs(deltaY) > threshold)
+      ) {
+        // 방향 결정: Y축 우선 모드가 활성화된 경우
+        if (this.options.prioritizeVertical) {
+          this.touchDirection =
+            Math.abs(deltaY) > 5 ? "vertical" : "horizontal";
+        } else {
+          // 기본 모드: 더 큰 값으로 방향 결정
+          this.touchDirection =
+            Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
+        }
+        this.touchDirectionLocked = true;
+
+        if (this.options.debug) {
+          console.log("🔒 터치 방향 고정:", {
+            방향: this.touchDirection,
+            deltaX: deltaX.toFixed(1),
+            deltaY: deltaY.toFixed(1),
+            임계값: threshold,
+          });
+        }
+      }
+
+      // 방향이 고정된 경우 해당 방향의 델타만 사용
+      if (this.touchDirectionLocked) {
+        return this.touchDirection === "horizontal" ? deltaX : deltaY;
+      }
+    }
+
+    // 🆕 Y축 우선 모드 적용 (방향 고정이 비활성화된 경우)
     if (this.options.prioritizeVertical) {
       // Y축 우선: Y값이 0이 아니면 무조건 Y축, 0이면 X축
       return deltaY !== 0 ? deltaY : deltaX;

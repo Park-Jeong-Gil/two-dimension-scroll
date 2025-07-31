@@ -57,6 +57,12 @@ export class TwoDimensionScroll {
   private touchMoveCount: number = 0;
   private touchStopTimer: NodeJS.Timeout | null = null;
 
+  // 🆕 터치 방향 고정을 위한 속성들
+  private touchDirection: "horizontal" | "vertical" | null = null;
+  private touchDirectionLocked: boolean = false;
+  private touchStartDeltaX: number = 0;
+  private touchStartDeltaY: number = 0;
+
   // 🚨 모달 관련 속성 추가
   private isModalOpen: boolean = false;
 
@@ -214,6 +220,12 @@ export class TwoDimensionScroll {
     this.touchVelocityX = 0;
     this.touchVelocityY = 0;
     this.touchMoveCount = 0;
+
+    // 🆕 터치 방향 고정 초기화
+    this.touchDirection = null;
+    this.touchDirectionLocked = false;
+    this.touchStartDeltaX = 0;
+    this.touchStartDeltaY = 0;
 
     if (this.touchStopTimer) {
       clearTimeout(this.touchStopTimer);
@@ -404,7 +416,43 @@ export class TwoDimensionScroll {
    * 가로와 세로 델타를 조합하여 최종 델타 계산
    */
   private calculateCombinedDelta(deltaX: number, deltaY: number): number {
-    // 🆕 Y축 우선 모드 적용
+    // 🆕 터치 방향 고정 모드 적용
+    if ((this.options as any).lockTouchDirection) {
+      const threshold = (this.options as any).touchDirectionThreshold || 15;
+
+      // 방향이 아직 결정되지 않았고, 충분한 이동이 있는 경우
+      if (
+        !this.touchDirectionLocked &&
+        (Math.abs(deltaX) > threshold || Math.abs(deltaY) > threshold)
+      ) {
+        // 방향 결정: Y축 우선 모드가 활성화된 경우
+        if ((this.options as any).prioritizeVertical) {
+          this.touchDirection =
+            Math.abs(deltaY) > 5 ? "vertical" : "horizontal";
+        } else {
+          // 기본 모드: 더 큰 값으로 방향 결정
+          this.touchDirection =
+            Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
+        }
+        this.touchDirectionLocked = true;
+
+        if (this.options.debug) {
+          console.log("🔒 터치 방향 고정:", {
+            방향: this.touchDirection,
+            deltaX: deltaX.toFixed(1),
+            deltaY: deltaY.toFixed(1),
+            임계값: threshold,
+          });
+        }
+      }
+
+      // 방향이 고정된 경우 해당 방향의 델타만 사용
+      if (this.touchDirectionLocked) {
+        return this.touchDirection === "horizontal" ? deltaX : deltaY;
+      }
+    }
+
+    // 🆕 Y축 우선 모드 적용 (방향 고정이 비활성화된 경우)
     if ((this.options as any).prioritizeVertical) {
       // Y축 우선: Y값이 0이 아니면 무조건 Y축, 0이면 X축
       return deltaY !== 0 ? deltaY : deltaX;

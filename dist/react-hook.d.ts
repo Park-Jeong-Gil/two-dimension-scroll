@@ -23,7 +23,9 @@ export interface EnvironmentScrollOptions {
   flingMultiplier?: number;
   touchStopThreshold?: number;
   hybridMode?: boolean;
-  prioritizeVertical?: boolean; // �� Y축 우선 모드
+  prioritizeVertical?: boolean; // 🆕 Y축 우선 모드
+  lockTouchDirection?: boolean; // 🆕 터치 방향 고정 모드
+  touchDirectionThreshold?: number; // 🆕 터치 방향 결정 임계값
 }
 
 // 메인 옵션 인터페이스

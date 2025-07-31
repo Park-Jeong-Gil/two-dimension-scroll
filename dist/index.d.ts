@@ -23,6 +23,10 @@ export declare class TwoDimensionScroll {
     private touchVelocityY;
     private touchMoveCount;
     private touchStopTimer;
+    private touchDirection;
+    private touchDirectionLocked;
+    private touchStartDeltaX;
+    private touchStartDeltaY;
     private isModalOpen;
     constructor(options?: TwoDimensionScrollOptions);
     /**
