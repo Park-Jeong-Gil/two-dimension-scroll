@@ -253,6 +253,9 @@ function createTwoDimensionScrollClass() {
     this.smoothedDeltaX = 0;
     this.smoothedDeltaY = 0;
     this.directionChangeStartTime = 0;
+    this.verticalScrollDirection = null; // 🆕 세로 스크롤 방향 추적
+
+    // 🚨 모달 관련 속성 추가
 
     // 초기화
     this.passive = supportsPassive() ? { passive: false } : false;
@@ -828,6 +831,9 @@ function createTwoDimensionScrollClass() {
     this.smoothedDeltaX = 0;
     this.smoothedDeltaY = 0;
     this.directionChangeStartTime = 0;
+    this.verticalScrollDirection = null; // 🆕 세로 스크롤 방향 추적
+
+    // 🚨 모달 관련 속성 추가
 
     if (this.touchStopTimer) {
       clearTimeout(this.touchStopTimer);
@@ -977,8 +983,30 @@ function createTwoDimensionScrollClass() {
         return deltaX;
       } else {
         // 세로 스크롤: Y축만 사용, X축 완전 무시
-        // 🎯 핵심 개선: X축 성분을 완전히 제거하여 흔들림 방지
-        return deltaY;
+        // 🎯 핵심 개선: 절댓값을 사용하여 방향 일관성 보장
+        var magnitude = Math.abs(deltaY);
+
+        // 터치 시작 시 주요 방향 결정 (한 번만)
+        if (!this.touchDirectionLocked) {
+          // 초기 Y축 방향 결정 (양수면 아래, 음수면 위)
+          this.verticalScrollDirection = deltaY > 0 ? "down" : "up";
+          this.touchDirectionLocked = true;
+
+          if (this.options.debug) {
+            console.log("�� 세로 스크롤 방향 고정:", {
+              방향: this.verticalScrollDirection,
+              초기deltaY: deltaY.toFixed(1),
+              크기: magnitude.toFixed(1),
+            });
+          }
+        }
+
+        // 고정된 방향에 따라 일관된 부호 적용
+        if (this.verticalScrollDirection === "down") {
+          return magnitude; // 항상 양수 (아래로)
+        } else {
+          return -magnitude; // 항상 음수 (위로)
+        }
       }
     }
 

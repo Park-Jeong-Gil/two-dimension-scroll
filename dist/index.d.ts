@@ -33,6 +33,7 @@ export declare class TwoDimensionScroll {
     private smoothedDeltaX;
     private smoothedDeltaY;
     private directionChangeStartTime;
+    private verticalScrollDirection;
     private isModalOpen;
     constructor(options?: TwoDimensionScrollOptions);
     /**
