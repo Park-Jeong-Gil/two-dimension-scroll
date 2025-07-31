@@ -23,6 +23,7 @@ export interface EnvironmentScrollOptions {
   flingMultiplier?: number;
   touchStopThreshold?: number;
   hybridMode?: boolean;
+  prioritizeVertical?: boolean; // �� Y축 우선 모드
 }
 
 // 메인 옵션 인터페이스
