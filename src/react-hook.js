@@ -169,6 +169,7 @@ function createTwoDimensionScrollClass() {
         wheelMultiplier: 1.1,
         precisionMode: true,
         keyboardScrollAmount: 0.8,
+        prioritizeVertical: false, // 🆕 Y축 우선 모드 (기본값: false)
       },
       mobile: {
         duration: 800,
@@ -179,6 +180,7 @@ function createTwoDimensionScrollClass() {
         bounceEffect: true,
         flingMultiplier: 1.2,
         touchStopThreshold: 4,
+        prioritizeVertical: false, // 🆕 Y축 우선 모드 (기본값: false)
       },
       tablet: {
         duration: 900,
@@ -188,6 +190,7 @@ function createTwoDimensionScrollClass() {
         wheelMultiplier: 1.05,
         touchMultiplier: 2.2,
         hybridMode: true,
+        prioritizeVertical: false, // 🆕 Y축 우선 모드 (기본값: false)
       },
     };
 
@@ -901,6 +904,13 @@ function createTwoDimensionScrollClass() {
     deltaX,
     deltaY
   ) {
+    // 🆕 Y축 우선 모드 적용
+    if (this.options.prioritizeVertical) {
+      // Y축 우선: Y값이 0이 아니면 무조건 Y축, 0이면 X축
+      return deltaY !== 0 ? deltaY : deltaX;
+    }
+
+    // 기존 로직
     var absX = Math.abs(deltaX);
     var absY = Math.abs(deltaY);
 

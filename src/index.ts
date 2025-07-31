@@ -168,8 +168,15 @@ export class TwoDimensionScroll {
     const deltaY =
       rawDeltaY * this.options.verticalSensitivity * wheelMultiplier;
 
-    // 🔥 데모와 동일: 더 큰 델타 값 선택
-    let finalDelta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
+    // 🆕 Y축 우선 모드 적용
+    let finalDelta: number;
+    if ((this.options as any).prioritizeVertical) {
+      // Y축 우선: Y값이 0이 아니면 무조건 Y축, 0이면 X축
+      finalDelta = deltaY !== 0 ? deltaY : deltaX;
+    } else {
+      // 기존 방식: 더 큰 델타 값 선택
+      finalDelta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
+    }
 
     // 🚨 극한 성능: 추가 배율 적용
     finalDelta *= 2.0; // 데모 수준의 극한 성능
@@ -180,6 +187,7 @@ export class TwoDimensionScroll {
         민감도: `X:${this.options.horizontalSensitivity}, Y:${this.options.verticalSensitivity}`,
         배율: wheelMultiplier,
         계산후: `X:${deltaX.toFixed(1)}, Y:${deltaY.toFixed(1)}`,
+        Y축우선: (this.options as any).prioritizeVertical || false,
         최종델타: finalDelta.toFixed(1),
         극한배율: "2.0x",
       });
@@ -396,7 +404,13 @@ export class TwoDimensionScroll {
    * 가로와 세로 델타를 조합하여 최종 델타 계산
    */
   private calculateCombinedDelta(deltaX: number, deltaY: number): number {
-    // 가로 스크롤이 더 큰 경우, 가로 스크롤을 세로로 변환
+    // 🆕 Y축 우선 모드 적용
+    if ((this.options as any).prioritizeVertical) {
+      // Y축 우선: Y값이 0이 아니면 무조건 Y축, 0이면 X축
+      return deltaY !== 0 ? deltaY : deltaX;
+    }
+
+    // 기존 로직: 가로 스크롤이 더 큰 경우, 가로 스크롤을 세로로 변환
     if (Math.abs(deltaX) > Math.abs(deltaY)) {
       return deltaX; // 가로 스크롤을 세로로 변환
     }

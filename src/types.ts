@@ -26,6 +26,8 @@ export interface EnvironmentScrollOptions {
   touchStopThreshold?: number;
   /** 하이브리드 모드 */
   hybridMode?: boolean;
+  /** 대각선 스크롤 시 Y축 우선 모드 */
+  prioritizeVertical?: boolean;
 }
 
 /**
