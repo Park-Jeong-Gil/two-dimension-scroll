@@ -434,19 +434,25 @@ export class TwoDimensionScroll {
   private calculateCombinedDelta(deltaX: number, deltaY: number): number {
     // 🆕 각도 기반 방향 결정 (최우선 처리)
     if ((this.options as any).useAngleBasedDirection) {
-      const horizontalThreshold =
+      let horizontalThreshold =
         (this.options as any).horizontalAngleThreshold || 20; // 기본값: 20도
+
+      // 🎯 prioritizeVertical이 활성화되면 가로 임계값을 극도로 엄격하게!
+      if ((this.options as any).prioritizeVertical) {
+        horizontalThreshold = 2; // 2도 이하만 가로로 인식 (거의 완전 수평만)
+      }
 
       // 각도 계산 (라디안 -> 도)
       const angle =
         Math.atan2(Math.abs(deltaY), Math.abs(deltaX)) * (180 / Math.PI);
 
       if (this.options.debug) {
-        console.log("📐 각도 기반 방향 결정 (최우선):", {
+        console.log("📐 각도 기반 방향 결정 (prioritizeVertical 적용):", {
           deltaX: deltaX.toFixed(1),
           deltaY: deltaY.toFixed(1),
           각도: angle.toFixed(1) + "°",
           임계각도: horizontalThreshold + "°",
+          prioritizeVertical: (this.options as any).prioritizeVertical,
           결정방향: angle <= horizontalThreshold ? "가로" : "세로",
         });
       }

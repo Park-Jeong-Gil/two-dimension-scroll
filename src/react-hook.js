@@ -963,21 +963,27 @@ function createTwoDimensionScrollClass() {
     if (this.options.useAngleBasedDirection) {
       var horizontalThreshold = this.options.horizontalAngleThreshold || 20; // 기본값: 20도
 
+      // 🎯 prioritizeVertical이 활성화되면 가로 임계값을 극도로 엄격하게!
+      if (this.options.prioritizeVertical) {
+        horizontalThreshold = 2; // 2도 이하만 가로로 인식 (거의 완전 수평만)
+      }
+
       // 각도 계산 (라디안 -> 도)
       var angle =
         Math.atan2(Math.abs(deltaY), Math.abs(deltaX)) * (180 / Math.PI);
 
       if (this.options.debug) {
-        console.log("📐 각도 기반 방향 결정 (최우선):", {
+        console.log("📐 각도 기반 방향 결정 (prioritizeVertical 적용):", {
           deltaX: deltaX.toFixed(1),
           deltaY: deltaY.toFixed(1),
           각도: angle.toFixed(1) + "°",
           임계각도: horizontalThreshold + "°",
+          prioritizeVertical: this.options.prioritizeVertical,
           결정방향: angle <= horizontalThreshold ? "가로" : "세로",
         });
       }
 
-      // 🚀 개선된 로직: 방향에 따라 순수한 축 값만 반환
+      // 🚀 개선된 로직: 방향에 따라 순수한 축 값만 반환 + 방향 일관성 유지
       if (angle <= horizontalThreshold) {
         // 가로 스크롤: X축만 사용, Y축 완전 무시
         return deltaX;
